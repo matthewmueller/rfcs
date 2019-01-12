@@ -44,7 +44,16 @@ As described in e.g. [prisma#3104](https://github.com/prisma/prisma/issues/3104)
 
 # Detailed design
 
+## Goal
+
+- Intuitive API (high discoverablity and self-documenting)
+- Full type-safety (incl. arguments and return type) without the need for explicitly provided generics
+- Also works for plain JavaScript/Node.js
+
+## Approach
+
 The idea is to mimic a GraphQL query in JS (or languages):
+
 - To express whether you fetch a field/relation you set it to `true` or `false`. Empty/nested objects are equivalent to specifying `true`.
 - **Scalars `true` by default** Similar to how the client automatically fetches all scalar fields, the queried relations inside the `$nested` query also contain all scalar values by default.
 - **Relations `false` by default** Also same as for the typically client behavior, relations are not fetched by default but can be fetched by setting the corresponding field to `true` or `{ ... }`.
@@ -68,18 +77,61 @@ const nestedResult = await prisma.$nested({
 
 # Drawbacks
 
-## Drawback 1: "Ugly" query value token
+## Drawback 1: "Ugly" object value token
 
 Queries in this API proposal are expressed using JS objects which always require a key **and a value** opposing to a GraphQL query where just providing a key (i.e. the field you're querying for) is enough. This means we need some kind of *token* for the value. Ideally we could come up with some kind of better syntax or avoid having to provide a token value altogether.
 
 # Alternatives
 
-## Drawback 1: "Ugly" query value token
+Before diving into the details of the alternative suggestions, note that most proposals below are not mutually exclusive with the initial proposal. That means at the expense of additional implementation cost we could allow for a combination of all different syntaxes.
 
-- Use `{}` instead of `true`/`false`. The downside of this approach is that it wouldn't allow for explicitly excluding certain fields from being queried unless we'd opt for allowing `{} | false`.
-- Another approach could be to use a builder API (e.g. `.$nested(posts(comments(), tags()).friends())`). The downside of this approach would probably be the following:
-  - Lost automatic type-safety of the return types
-  - "Free floating functions" tend to be less intuitive/pragmatic to use as they don't provide contextual auto-completion like a typed object would do.
+### Alternative 1.1 (addresses Drawback 1)
+
+Use `{}` instead of `true`/`false`. The downside of this approach is that it wouldn't allow for explicitly excluding certain fields from being queried unless we'd opt for allowing `{} | false`.
+
+### Alternative 1.2 (addresses Drawback 1)
+
+Another approach could be to use a builder API.
+
+```ts
+const nestedResult = await prisma.$nested(
+  posts(
+   comments(), 
+   tags()
+  ),
+  friends()
+)
+```
+
+The downside of this approach would probably be the following:
+
+- Lost automatic type-safety of the return types
+- "Free floating functions" tend to be less intuitive/pragmatic to use as they don't provide contextual auto-completion like a typed object would do.
+
+### Alternative 1.3  (addresses Drawback 1)
+
+Yet another approach would be to allow a combination of the presented nested object notation and string (literal) arrays in the case of leaf query fields. Here are a few examples:
+
+```ts
+// 1.3.1 Simple example to query a user their related friends and posts
+const dynamicResult: DynamicResult = await prisma
+  .user('bobs-id')
+  .$nested(['friends', 'posts'])
+
+// 1.3.2 Slightly more complex query that also includes the comments for each post
+const dynamicResult: DynamicResult = await prisma
+  .user('bobs-id')
+  .$nested(['friends', { posts: ['comments'] }])
+
+// 1.3.3 Even more complex query that uses pagination for the queried post comments
+const dynamicResult: DynamicResult = await prisma
+  .user('bobs-id')
+  .$nested(['friends', { posts: [{ comments: { $args: { first: 100 } } }] }])
+```
+
+This string array based approach successfully avoids the need for a object value token altogether and is intuitive and straightforward to read/write in simple cases. However, as seen in the 1.3.2 example above a combination of string (here `'friends'`) and object notation (here `{ posts: ... }`) can be unintuitive to read since the difference in notion suggests for the two fields to be not on the same hierarchy level.
+
+
 
 # Adoption strategy
 
@@ -92,6 +144,6 @@ By documenting it properly across our docs and examples.
 # Unresolved questions
 
 - [ ] Is the proposed API even possible to implement in TS? The best approach seems to be a combination of conditional types and code generation.
-- [ ] Should we use `true` as a token in the query API or can we find a better/different approach?
+- [ ] Should we use `true` as a token in the query API, the string array syntax or can we find a better/different approach?
 - [ ] Should we call the API `$nested` or can we find a better name?
 - [ ] Should we introduce a special `$depth` feature for recursive relations?
