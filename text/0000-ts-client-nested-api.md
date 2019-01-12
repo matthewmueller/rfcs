@@ -52,8 +52,7 @@ As described in e.g. [prisma#3104](https://github.com/prisma/prisma/issues/3104)
 
 ## Approach
 
-The idea is to mimic a GraphQL query in JS (or languages):
-
+The idea is to mimic a GraphQL query in JS (or other languages):
 - To express whether you fetch a field/relation you set it to `true` or `false`. Empty/nested objects are equivalent to specifying `true`.
 - **Scalars `true` by default** Similar to how the client automatically fetches all scalar fields, the queried relations inside the `$nested` query also contain all scalar values by default.
 - **Relations `false` by default** Also same as for the typically client behavior, relations are not fetched by default but can be fetched by setting the corresponding field to `true` or `{ ... }`.
