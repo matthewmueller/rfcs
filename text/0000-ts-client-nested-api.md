@@ -115,22 +115,38 @@ Yet another approach would be to allow a combination of the presented nested obj
 // 1.3.1 Simple example to query a user their related friends and posts
 const dynamicResult: DynamicResult = await prisma
   .user('bobs-id')
-  .$nested(['friends', 'posts'])
+  .$nested('friends', 'posts')
 
 // 1.3.2 Slightly more complex query that also includes the comments for each post
 const dynamicResult: DynamicResult = await prisma
   .user('bobs-id')
-  .$nested(['friends', { posts: ['comments'] }])
+  .$nested('friends', { posts: 'comments' })
 
 // 1.3.3 Even more complex query that uses pagination for the queried post comments
 const dynamicResult: DynamicResult = await prisma
   .user('bobs-id')
-  .$nested(['friends', { posts: [{ comments: { $args: { first: 100 } } }] }])
+  .$nested(
+    'friends',
+    { posts: { comments: { $args: { first: 100 } } } }
+  )
 ```
+
+Note that for the sake of convenience the proposal suggests to support both an explicit and an optional array notation. That means that the following example both work and are equivalent `$nested(['field1', 'field2'])` and `$nested('field1', 'field2')`. The same also applies for deeper fields in the object hierarchy.
 
 This string array based approach successfully avoids the need for a object value token altogether and is intuitive and straightforward to read/write in simple cases. However, as seen in the 1.3.2 example above a combination of string (here `'friends'`) and object notation (here `{ posts: ... }`) can be unintuitive to read since the difference in notion suggests for the two fields to be not on the same hierarchy level.
 
+### Alternative 1.4
 
+To make it easier for a developer to structure their code in a flexible way, we could also support chained `.$nested` calls following the Fluent API style. This would allow for the following:
+
+```ts
+const dynamicResult: DynamicResult = await prisma
+  .user('bobs-id')
+  .$nested('friends')
+  .$nested({ posts: 'comments' })
+```
+
+However, we have to carefuly evaluate whether this additional API functionality is worth it.
 
 # Adoption strategy
 
