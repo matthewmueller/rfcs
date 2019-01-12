@@ -1,5 +1,5 @@
 - Start Date: 2019-01-12
-- RFC PR: (leave this empty)
+- RFC PR: [rfcs#1](https://github.com/prisma/rfcs/pull/1)
 - Prisma Issue: (leave this empty)
 
 # Summary
