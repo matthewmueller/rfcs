@@ -162,3 +162,4 @@ By documenting it properly across our docs and examples.
 - [ ] Should we use `true` as a token in the query API, the string array syntax or can we find a better/different approach?
 - [ ] Should we call the API `$nested` or can we find a better name?
 - [ ] Should we introduce a special `$depth` feature for recursive relations?
+- [ ] TS implementation: How would generic variables be handled?
