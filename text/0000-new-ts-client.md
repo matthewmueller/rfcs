@@ -150,6 +150,7 @@ async function main() {
   const usersQueryWithTimeout = await prisma.users.$exec({ timeout: 1000 })
 }
 
+// NOTE the following types are auto-generated
 type Post = {
   id: string
   title: string
@@ -190,7 +191,6 @@ type DynamicResult4 = {
 }
 
 const prisma: any = true
-export const placeholder = true
 ```
 
 
