@@ -39,6 +39,27 @@ async function main() {
     orderBy: { profile: { imageSize: 'ASC' } },
   })
 
+  // Where / filtering
+  await prisma.users({
+    where: { email_contains: '@gmail.com' },
+  })
+
+  // Raw
+  await prisma.users({
+    where: { email_contains: '@gmail.com' },
+    raw: { orderBy: 'age + postsViewCount DESC' },
+  })
+
+  const someEmail = 'bob@prisma.io'
+  await prisma.users({
+    // where is overwritten when provided in raw
+    // where: { email_contains: '@gmail.com' },
+    raw: {
+      orderBy: 'age + postsViewCount DESC',
+      where: ['email = $1', someEmail],
+    },
+  })
+
   // Fluent API
   const bobsPosts: Post[] = await prisma.users
     .findOne('bobs-id')
@@ -73,32 +94,35 @@ async function main() {
   // Aggregations
   const dynamicResult2: DynamicResult2 = await prisma.users(
     {},
-    { $aggregate: { age: { avg: true } } },
+    { aggregate: { age: { avg: true } } },
   )
 
   const dynamicResult3: DynamicResult3 = await prisma.users.findOne('bobs-id', {
-    posts: { $aggregate: { count: true } },
-  })
-
-  // Top level $query API
-  const nestedResult = await prisma.$query({
-    users: {
-      $first: 100,
-      posts: { comments: true },
-      friends: true,
-    },
+    posts: { aggregate: { count: true } },
   })
 
   // GroupBy
-  const groupByResult: DynamicResult4 = await prisma
-    .users({ where: { isActive: true } })
-    .$groupBy(
-      { key: 'lastName', having: { age_avg_gt: 10 } },
-      {
-        $records: { $first: 100 },
-        $aggregate: { age: { avg: true } },
-      },
-    )
+  const groupByResult: DynamicResult4 = await prisma.users.groupBy(
+    {
+      key: 'lastName',
+      having: { age_avg_gt: 10 },
+      where: { isActive: true },
+      first: 100,
+      orderBy: { lastName: 'ASC' },
+    },
+    {
+      records: { $first: 100 },
+      aggregate: { age: { avg: true } },
+    },
+  )
+
+  const groupByResult2: DynamicResult5 = await prisma.users.groupBy(
+    { raw: { key: 'firstName || lastName', having: 'AVG(age) > 50' } },
+    {
+      records: { $first: 100 },
+      aggregate: { age: { avg: true } },
+    },
+  )
 
   // Writing data
   const newUser: User = await prisma.users.create({ firstName: 'Alice' })
@@ -148,6 +172,15 @@ async function main() {
 
   // Explicit $exec terminator
   const usersQueryWithTimeout = await prisma.users.$exec({ timeout: 1000 })
+
+  // Top level $query API
+  const nestedResult = await prisma.$query({
+    users: {
+      $first: 100,
+      posts: { comments: true },
+      friends: true,
+    },
+  })
 }
 
 // NOTE the following types are auto-generated
@@ -181,18 +214,25 @@ type DynamicResult1 = {
 
 type DynamicResult2 = { age: { avg: number } }
 type DynamicResult3 = {
-  posts: (Post & { $aggregate: { count: number } })[]
+  posts: (Post & { aggregate: { count: number } })[]
 }
 
 type DynamicResult4 = {
   lastName: string
-  $records: User[]
-  $aggregate: { age: { avg: number } }
+  records: User[]
+  aggregate: { age: { avg: number } }
 }
 
-const prisma: any = true
+type DynamicResult5 = {
+  raw: any
+  records: User[]
+  aggregate: { age: { avg: number } }
+}
 ```
 
+## `$withPageInfo`
+
+- Can be applied to every paginable list and stream
 
 # Drawbacks
 
