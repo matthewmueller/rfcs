@@ -18,7 +18,7 @@ This allows use-cases like:
 
 An expression could look similar to this on the client side. 
 
-```
+```ts
 const nestedResult = await prisma.users({
   users: {
     orderBy: user =>
@@ -103,7 +103,7 @@ The serialized query is parsed, type checked and executed by the prisma server.
 
 That would be exposed on GraphQL types as a special expressoin field, that can be aliased in the query.
 
-```
+```graphql
 type User {
   firstName: string
   lastName: string
@@ -114,7 +114,7 @@ type User {
 
 The expression field would then be used like this in a query
 
-```
+```graphql
 allUsers {
    firstName
    lastName
