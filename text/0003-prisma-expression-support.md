@@ -99,6 +99,12 @@ Alternative would be infix notation (with parentheses and unary functions) or a 
 
 The serialized query is parsed, type checked and executed by the prisma server.
 
+**Future development**
+
+RPN is most likely limiting in the long run. It is not straight forward to express group by, aggregation or subqueries in this form. 
+
+Therefore, this proposed serialization should be considered a construct to ensure interoperability with GraphQL.
+
 **GraphQL Schema** 
 
 That would be exposed on GraphQL types as a special expressoin field, that can be aliased in the query.
