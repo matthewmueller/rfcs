@@ -19,19 +19,19 @@ This allows use-cases like:
 An expression could look similar to this on the client side. 
 
 ```ts
-const nestedResult = await prisma.users({
-  users: {
-    orderBy: user =>
-      user.posts.comments
-        .count()
-        .multiply(2)
-        .add(user.posts.comments.likes.sum())
-        .desc(),
-    $first: 1,
-    friends: true,
-    posts: true,
-  },
-})
+  const nestedResult1 = await prisma.users({
+    first: 100,
+    // See #1
+    select: {
+      posts: {
+        select: {
+          // Extra aggregate field of type T where Lambda type returns Expression<T>
+          likeCount: (post: PostExpression) => post.comments.likes.sum()
+        }
+      },
+      friends: true
+    }
+  })
 ```
 
 Alternatives would be other builder patterns, like a util object, or a string containing the expressions. 
