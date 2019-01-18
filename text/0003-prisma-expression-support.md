@@ -101,9 +101,9 @@ The serialized query is parsed, type checked and executed by the prisma server.
 
 **Future development**
 
-RPN is most likely limiting in the long run. It is not straight forward to express group by, aggregation or subqueries in this form. 
+The RPN scheme is a pure parser-specific notation. It is therefore powerful enough to express every expression tree that can also be expressed in infix notation.
 
-Therefore, this proposed serialization should be considered a construct to ensure interoperability with GraphQL.
+When moving away from GraphQL, a binary representation might be considered.
 
 **GraphQL Schema** 
 
