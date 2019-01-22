@@ -113,9 +113,10 @@ import { GraphQLSchema } from 'graphql'
 import { IGQLType } from 'prisma-datamodel'
 import * as fs from 'fs'
 
-export interface GeneratorInput {
+export interface GeneratorInput<Parameters = any> {
   /**
-   * The graphql-js schema instance
+   * The graphql-js schema instance. The schema is the generated API Schema, that is
+   * being generated based on the datamodel.
    */
   schema: GraphQLSchema
   /**
@@ -135,11 +136,13 @@ export interface GeneratorInput {
   /**
    * The parameters provided in the prisma.yml for this generator, converted from yaml to json.
    */
-  parameters: any
+  parameters: Parameters
 }
 
 /**
- * FileMap is a mapping from file name to file content
+ * FileMap is a mapping from file name to file content.
+ * Folders will automatically be created when they don't exist already.
+ * The paths of files will be created relative to the prisma.yml
  */
 export interface FileMap {
   [fileName: string]: string
@@ -170,16 +173,12 @@ A concrete user implementation of a generator could look like this:
 import { Generator, GeneratorInput } from './Generator'
 import { print } from 'graphql'
 
-export interface ExampleGeneratorInput extends GeneratorInput {
-  parameters: Parameters
-}
-
 export interface Parameters {
   output: string
 }
 
 export default class ExampleGenerator extends Generator {
-  constructor(input: ExampleGeneratorInput) {
+  constructor(input: GeneratorInput<Parameters>) {
     super(input)
   }
   render() {
@@ -210,7 +209,7 @@ The JSON format will look like this:
 ```ts
 export interface GeneratorInput {
   /**
-   * The schema SDL string
+   * The schema SDL string representing the API Schema, which is being generated based on the datamodel.
    */
   schema: string
   /**
