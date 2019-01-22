@@ -26,11 +26,11 @@ While you still can write a Java generator in TypeScript, many of these language
 
 # Detailed design
 
-While we both want to support TypeScript and other languages as generator implementations, it's clear that we can't provide the same convenience for other languages as for TypeScript. As our CLI is also implemented in TypeScript, we can for example directly pass in a `graphql-js` schema object to the specific generator. This is not possible for the other languages, where we need to find a language agnostic format, which will be SDL. However, as TypeScript is a major use-case, it still makes sense to provide a dedicated TypeScript API while having a language-agnostic API as a fallback.
+While we both want to support TypeScript and other languages as generator implementations, it's clear that we can't provide the same convenience for other languages as for TypeScript. As our CLI is also implemented in TypeScript, we can e.g. directly pass in a `graphql-js` schema object to the specific generator. This is not possible for the other languages, where we need to find a language agnostic format, which will be SDL. However, as TypeScript is a major use-case, it still makes sense to provide a dedicated TypeScript API while having a language-agnostic API as a fallback.
 
 In the following we discuss how generators are being **configured** from the `prisma.yml` and how the **generator resolution** works. We will also explore, how the  **interface ** of a generator looks like, how a generator can be **packaged and installed** and how **arguments** can be passed in to a generator.
 
-Until now, generators have only been responsible for generating the code, but not saving it to the filesystem. In order to be more flexible and support folders and files as output, this responsibility will from now on be delegated to the individual generator.
+Until now, generators have only been responsible for generating the code, but not saving it to the filesystem. Non-TypeScript generators will be responsible for writing to the filesystem on their own. The TypeScript-based generators however will just need to return a Map of file name and file content, which will be written to the file system.
 
 
 
@@ -49,18 +49,16 @@ generate:
     output: ./src/generated/client
 ```
 
-The advantage of this syntax is, that one generator could be referenced to multiple times. The disadvantage however is, that we have redundancy and we need to keep the indentation for the objects in the array in check. With the assumption, that the use-case of using one generator multiple times per project is very rare, we can achieve this simplification:
+The advantage of this syntax is, that one generator could be referenced to multiple times. The disadvantage however is, that we have redundancy and we need to keep the indentation for the objects in the array in check. For the use-case that only one generator will be used, we optionally allow the inlining of the first generator:
 
 ```yaml
 endpoint: http://localhost:4466
 datamodel: datamodel.prisma
 
 generate:
-  typescript-client:
-    output: ./src/generated/client
+  generator: typescript-client
+  output: ./src/generated/client
 ```
-
-If it turns out to still be an important use-case also depending on the generator, we could also support arrays as inputs and call the generator multiple times with each individual inputs or just delegate this "multi tenancy" functionality to the individual generators.
 
 
 
@@ -104,7 +102,7 @@ When the generators then are called, this needs to be communicated from the CLI 
 
 A generator, which is implemented in TypeScript, has to adhere to the following convention:
 
-The generator name equals the npm package name.
+The generator name equals the npm package name. That means if the generator is called `my-typescript-generator` in the `prisma.yml`, then that's the name of the npm package that this generator has to live in.
 
 The package should have a default export of a class, that extends the `Generator` class of the `prisma-generator` package, which will be a package including the default generators and some other useful utility functions.
 
@@ -115,7 +113,7 @@ import { GraphQLSchema } from 'graphql'
 import { IGQLType } from 'prisma-datamodel'
 import * as fs from 'fs'
 
-export type GeneratorInput = {
+export interface GeneratorInput {
   /**
    * The graphql-js schema instance
    */
@@ -137,15 +135,19 @@ export type GeneratorInput = {
   /**
    * The parameters provided in the prisma.yml for this generator, converted from yaml to json.
    */
-  parameters: Parameters
+  parameters: any
 }
 
-export type Parameters = {
-  output: string
-  flavor: 'active-record' | 'data-mapper'
+/**
+ * FileMap is a mapping from file name to file content
+ */
+export interface FileMap {
+  [fileName: string]: string
 }
 
-export class Generator {
+export type RenderOutput = FileMap | string
+
+export abstract class Generator {
   protected input: GeneratorInput
 
   public static reservedTypes = ['Prisma']
@@ -154,9 +156,34 @@ export class Generator {
     this.input = input
   }
 
-  public run() {
-    const code = 'export const prisma = () => null'
-    fs.writeFileSync(this.input.parameters.output, code)
+  public abstract render(): RenderOutput
+  public saveToFS(output: RenderOutput) {
+    //...
+  }
+}
+
+```
+
+A concrete user implementation of a generator could look like this:
+
+```ts
+import { Generator, GeneratorInput } from './Generator'
+import { print } from 'graphql'
+
+export interface ExampleGeneratorInput extends GeneratorInput {
+  parameters: Parameters
+}
+
+export interface Parameters {
+  output: string
+}
+
+export default class ExampleGenerator extends Generator {
+  constructor(input: ExampleGeneratorInput) {
+    super(input)
+  }
+  render() {
+    return print(this.input.schema)
   }
 }
 
@@ -172,19 +199,43 @@ The reserved names for models can be expressed through the static property `rese
 
 ### Non-TypeScript
 
-The easiest way to achieve cross-language parameterization is by using environment variables. They're easily supported in every language and don't require any further parsing as with CLI based args.
+In order to inject the JSON data for the generators, we propose to inject one line of JSON via stdin.
 
-The proposal is to pass the same information, that the TypeScript based implementation gets injected as constructor arguments in the form of environment variables.
+This is a standard protocol, that every programming language can handle.
 
-The following environment variables will be passed into the non-TypeScript generator. They are prefixed with `PRISMA_GENERATE_` in order to prevent conflicts with other env vars that may be present during execution.
+As the non-TypeScript generators can potentially be binary based so that no information can be read from them, the only way to communicate information from the binary to the CLI would be via an API that is being agreed on. However, the two use-cases of having **reserved words** and **arguments typed** are optional and nice to have. The easier approach is, that the generators handle these cases on their own.
 
-- `PRISMA_GENERATE_SCHEMA`: A temporary path to the GraphQL Schema SDL. The file will be deleted after the generator has been called. It's necessary to put this information into a separate file, as the env var size limit in  Linux, Windows and Mac is 32760 characters, which is easily reached with the API schema resulting from a datamodel of a medium size.
-- `PRISMA_GENERATE_INTERNAL_TYPES`: The JSON representation of additional type information for the datamodel. When kept to the minimum, about 100 bytes are used per model right now. That means we could support 327 models which should be sufficiently enough for now.
-- `PRISMA_GENERATE_ENDPOINT`: The raw input string for the endpoint, provided in the `prisma.yml`, which may contain env var interpolation statements like this: `https://my-service.io/{env:STAGE}`
-- `PRISMA_GENERATE_SECRET`: The raw input string for the secret, provided in the `prisma.yml`, which may contain env var interpolation statements like this: `{env:PRISMA_SECRET}`
-- `PRISMA_GENERATE_PARAMETERS`: The JSON representation of the arguments provided in the `prisma.yml`
+The JSON format will look like this:
 
-As the non-TypeScript generators can potentially be binary based so that no information can be read from them, the only way to communicate information from the binary to the CLI would be via a CLI that is being agreed on. However, the two use-cases of having reserved words and arguments typed are optional and nice to have. The easier approach here would be, that the generators handle these cases on their own.
+```ts
+export interface GeneratorInput {
+  /**
+   * The schema SDL string
+   */
+  schema: string
+  /**
+   * The ast representation of all models, including information like `isEmbedded`
+   */
+  internalTypes: IGQLType[]
+  /**
+   * The raw string of the endpoint as provided in the prisma.yml.
+   * This may contain env var interpolation statements like ${env:PRISMA_ENDPOINT}
+   */
+  endpoint: string
+  /**
+   * The raw string of the secret as provided in the prisma.yml.
+   * This may contain env var interpolation statements like ${env:PRISMA_SECRET}
+   */
+  secret: string
+  /**
+   * The parameters provided in the prisma.yml for this generator, converted from yaml to json.
+   */
+  parameters: any
+}
+
+```
+
+
 
 
 
@@ -206,7 +257,7 @@ The current assumption is, that the CLI will ship the Prisma native image binary
 
 # Alternatives
 
-- A declarative API always is more limited than a imperative one. We could for example provide a .js or .ts config  file, in which users can create generator statements more dynamic. Right now there is no reason to do so, as the prisma.yml already allows injection of env vars, which gives some level of flexibility.
+- A declarative API always is more limited than an imperative one. We could for example provide a .js or .ts config  file, in which users can create generator statements more dynamic. Right now there is no reason to do so, as the prisma.yml already allows injection of env vars, which gives some level of flexibility.
 
   
 
