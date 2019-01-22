@@ -275,5 +275,6 @@ The usage of generators has already great resources. The part, that needs more a
 
 # Unresolved questions
 
-The Prisma SDK still needs to be specced out, but as already discussed in `Inclusion in Prisma SDK`, it is very unlikely that  there will be any significant findings from the Prisma SDK, which will change this spec, as this area is fairly isolated.
+- [ ] The Prisma SDK still needs to be specced out, but as already discussed in `Inclusion in Prisma SDK`, it is very unlikely that  there will be any significant findings from the Prisma SDK, which will change this spec, as this area is fairly isolated.
+- [ ] We should come up with better terminology instead of "TypeScript" and "Non-TypeScript" for the different ways of implementing a generator.
 
