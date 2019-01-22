@@ -14,6 +14,34 @@
 
 # Detailed design
 
+The example code below assumes the following datamodel:
+
+```
+model Post {
+  id: ID
+  title: String
+  body: String
+  comments: [Comment]
+  author: User
+}
+
+model Comment {
+  id: ID
+  text: String
+  post: Post
+  author: User
+}
+
+type User = {
+  id: ID
+  firstName: String
+  lastName: String
+  email: String
+  posts: [Post]
+  comments: [Comment]
+}
+```
+
 ```ts
 // NOTE: Explicit type annotations aren't required and just here for illustration
 async function main() {
@@ -219,6 +247,7 @@ type User = {
   id: string
   firstName: string
   lastName: string
+  email: string
 }
 
 type PageInfo<Data> = {
