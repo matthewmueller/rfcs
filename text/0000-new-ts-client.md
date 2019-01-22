@@ -32,7 +32,7 @@ model Comment {
   author: User
 }
 
-type User = {
+model User {
   id: ID
   firstName: String
   lastName: String
@@ -40,6 +40,12 @@ type User = {
   posts: [Post]
   comments: [Comment]
   friends: [User]
+  profile: Profile
+}
+
+embed Profile {
+  imageUrl: String
+  imageSize: String
 }
 ```
 
@@ -249,6 +255,12 @@ type User = {
   firstName: string
   lastName: string
   email: string
+  profile: Profile
+}
+
+type Profile = {
+  imageUrl: string
+  imageSize: number
 }
 
 type PageInfo<Data> = {
