@@ -66,7 +66,7 @@ generate:
 
 When referring to `typescript-client` as in the above `prisma.yml` example, the Prisma CLI now needs to decide in runtime how to resolve the generator implementation. This is the proposed order of resolution:
 
-1. Try to find the generator in the list of **predefined generators** (including `typescript-client`), which are shipped with the Prisma CLI
+1. Try to find the generator in the list of **predefined generators** (including `typescript-client`), which are shipped with the Prisma SDK
 2. Try to find a **node module** with the name of the generator, take as the base directory the directory of the `prisma.yml`
 3. Try to **spawn a new process** which runs the generator as a command. This means that generator names like `./generator/java-generator --run` should be possible. Note, that yaml keys with spaces are even possible without quotes:
 
