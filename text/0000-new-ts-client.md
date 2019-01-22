@@ -39,6 +39,7 @@ type User = {
   email: String
   posts: [Post]
   comments: [Comment]
+  friends: [User]
 }
 ```
 
