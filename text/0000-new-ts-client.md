@@ -104,7 +104,18 @@ async function main() {
   const dynamicResult1: DynamicResult1 = await prisma.users.findOne({
     where: 'bobs-id',
     select: {
-      posts: { select { comments: true } },
+      posts: { select: { comments: true } },
+      friends: true
+    }
+  })
+  
+  const dynamicResult1x: DynamicResult1 = await prisma.users.findOne({
+    where: 'bobs-id',
+    select: {
+      posts: {
+        where: { title_contains: 'Prisma' },
+        select: { comments: true }
+      },
       friends: true
     }
   })
