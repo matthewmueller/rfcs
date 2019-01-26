@@ -65,7 +65,7 @@ The user then executes `prisma deploy`, which now creates a new migration file i
 .
 ├── datamodel.prisma
 ├── migrate
-│   └── 0001_1548425145186.ts
+│   └── 0001_1548425145186.ts
 └── prisma.yml
 ```
 
@@ -96,7 +96,7 @@ Prisma would provide the opionation of calling migration files like this:
 
 `VVVV_TIMESTAMP.ts`, where VVVV are 4 digits for the auto incrementing version and TIMESTAMP is a unix timestamp. The order in which Prisma reads the migration files is determined by a lexicographical ordering of the file names.
 
-##  Scenario 1: Two compatible changes at the same time
+## Scenario 1: Two compatible changes at the same time
 
 Bob checks out the code locally and both Jen and Bob have a local version of Prisma running with their own database. Both Bob and Jen now perform a change to the datamodel, a local Migration file will be created and Jen pushes first. Bob doesn't pay too much attention what code Jen already pushed, just pulls and as he doesn't get any conflict, also pushes his code:
 
@@ -146,9 +146,9 @@ After the merge, the filesystem will look like this:
 .
 ├── datamodel.prisma
 ├── migrate
-│   ├── 0001_1548425145186.ts
-│   ├── 0002-1548425140000.ts
-│   └── 0002-1548425150000.ts
+│   ├── 0001_1548425145186.ts
+│   ├── 0002-1548425140000.ts
+│   └── 0002-1548425150000.ts
 └── prisma.yml
 
 ```
@@ -236,31 +236,29 @@ Prisma would fail in this case and ask for manual resolution from the user.
 In order to introduce a required field, that we need to initialize with proper data, we can provide a hook point for users to execute data transformations:
 
 ```ts
-import { MigrationInterface, CreateField, UpdateField, RunAsync } from 'prisma'
+import { migrate } from 'prisma-sdk'
 
-export default class Migration0002 implements MigrationInterface {
-  operations = [
-    CreateField({
-      model: 'User',
-      name: 'address',
-      type: 'String',
-      isRequired: false,
-    }),
-    RunAsync(async client => {
-      for (const user of client.users().$stream()) {
-        await client.updateUser(user.id, {
-          address: 'some default address in the universe ' + Math.random(),
-        })
-      }
-    }),
-    UpdateField({
-      model: 'User',
-      name: 'address',
-      type: 'String',
-      isRequired: true,
-    }),
-  ]
-}
+export default migrate(m => [
+  m.createField({
+    model: 'User',
+    name: 'address',
+    type: 'String',
+    isRequired: false,
+  }),
+  m.execute(async ctx => {
+    for (const user of ctx.client.users().$stream()) {
+      await ctx.client.updateUser(user.id, {
+        address: 'some default address in the universe ' + Math.random(),
+      })
+    }
+  }),
+  m.updateField({
+    model: 'User',
+    name: 'address',
+    type: 'String',
+    isRequired: true,
+  }),
+])
 ```
 
 The client could potentially even be typed with the new field. Note, that this requires a temporary endpoint, which already includes the new field, even if the migration is not yet done.
@@ -401,3 +399,6 @@ export default class Migration0002 implements MigrationInterface {
 
 Systems like Rails follow this approach. This would make migrations easier to reason about and prevent inconsistent data state. For a big production application this would however not be acceptable.
 
+## Other
+
+- [ ] How to generate a (type-safe) client for the run commands?
