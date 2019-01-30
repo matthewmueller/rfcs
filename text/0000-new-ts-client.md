@@ -280,22 +280,25 @@ type PageInfo<Data> = {
   hasPrev: boolean
 }
 
-type DynamicResult1 = {
+type DynamicResult1 = (User & {
   posts: (Post & { comments: Comment[] })[]
   friends: User[]
-}
+})[]
 
-type DynamicResult2 = { age: { avg: number } }
-type DynamicResult3 = {
+type DynamicResult2 = (User & { aggregate: { age: { avg: number } } })[]
+
+type DynamicResult3 = User & {
   posts: (Post & { aggregate: { count: number } })[]
 }
 
+// TODO wrong type
 type DynamicResult4 = {
   lastName: string
   records: User[]
   aggregate: { age: { avg: number } }
 }
 
+// TODO wrong type
 type DynamicResult5 = {
   raw: any
   records: User[]
