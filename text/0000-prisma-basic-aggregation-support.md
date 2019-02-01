@@ -68,21 +68,51 @@ Optionally, a `random` operator for selecting a random node can be supported.
 In accordance with the expression language RFC, those operators can be used to
 
 * Request custom scalar fields on any level
-
 * Filter and order a result set
 
-  
+### Examples
 
-The example below illustrates how a result set can be ordered by an aggregated value.
+Order by an aggregated value:
 
 ```typescript
-const nestedResult1 = await prisma.users({
+const nestedResult1 = await prisma.posts({
     first: 10,
     // See #1
     orderBy: (post: PostExpression) => post.comments.likes.sum()
     select: {
         posts: { },
         friends: true
+    }
+})
+```
+
+Filter by aggregated value: 
+
+```typescript
+const nestedResult2 = await prisma.students({
+    filter: (student: StudentExpression) => student.exams.grades.avg() > 3.0
+    select: {
+        firstName: true
+        lastName: true
+    }
+})
+```
+
+Nested ordering and filtering:
+
+```typescript
+const nestedResult3 = await prisma.directors({
+    orderBy: (director) => director.movies.reviews.rating.avg()
+    select: {
+        movies: {
+            orderBy: (movie) => movie.reviews.rating.avg(),
+            select: { 
+                reviews: {
+                    filter: (review) => review.text.length() > 100
+                    select: { }
+                }
+            }
+        }
     }
 })
 ```
