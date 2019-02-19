@@ -329,6 +329,119 @@ export default class Migration0002 implements MigrationInterface {
 }
 ```
 
+## Migration Operations
+These are the possible operations, which the language specific migration definitions (like TypeScript or Go) will generate:
+
+```ts
+interface CreateEnum {
+  operationType: 'CreateEnum'
+  name: string
+  values: string[]
+}
+
+interface CreateField {
+  operationType: 'CreateField'
+  model: string
+  name: string
+  type: string
+  isRequired: boolean
+  isList: boolean
+  isUnique: boolean
+  defaultValue: string
+  migrationValue: string
+}
+
+interface UpdateField {
+  operationType: 'UpdateField'
+  model: string
+  name: string
+  newName?: string
+  type?: string
+  isRequired?: boolean
+  isList?: boolean
+  isUnique?: boolean
+  enum?: string
+  defaultValue?: string
+}
+
+interface DeleteField {
+  operationType: 'DeleteField'
+  model: string
+  name: string
+}
+
+interface CreateModel {
+  operationType: 'CreateModel'
+  name: string
+  type: string
+  isEmbedded?: boolean
+}
+
+interface CreateRelation {
+  operationType: 'CreateRelation'
+  name: string
+  leftModel: string
+  rightModel: string
+}
+
+interface DeleteEnum {
+  operationType: 'DeleteEnum'
+  name: string
+}
+
+interface DeleteModel {
+  operationType: 'DeleteModel'
+  name: string
+}
+
+interface DeleteRelation {
+  operationType: 'DeleteRelation'
+  name: string
+}
+
+interface UpdateEnum {
+  operationType: 'UpdateEnum'
+  name: string
+  newName?: string
+  values?: string[]
+}
+
+interface UpdateModel {
+  operationType: 'UpdateModel'
+  name: string
+  newName: string
+}
+
+interface UpdateRelation {
+  operationType: 'UpdateRelation'
+  name: string
+  newName?: string
+  leftModel?: string
+  rightModel?: string
+}
+
+interface UpdateSecrets {
+  operationType: 'UpdateSecrets'
+  secrets: string[]
+}
+
+export type MigrationOperation =
+  | CreateEnum
+  | CreateField
+  | CreateModel
+  | CreateRelation
+  | DeleteEnum
+  | DeleteField
+  | DeleteModel
+  | DeleteRelation
+  | UpdateEnum
+  | UpdateField
+  | UpdateModel
+  | UpdateRelation
+  | UpdateSecrets
+
+```
+
 
 
 # Drawbacks
