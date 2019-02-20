@@ -516,3 +516,4 @@ Systems like Rails follow this approach. This would make migrations easier to re
 
 - [ ] How to generate a (type-safe) client for the run commands?
 - [ ] Evaluate `dependsOn` concept
+- [ ] Add option to prevent breaking changes
