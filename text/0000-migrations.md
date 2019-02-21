@@ -18,9 +18,9 @@ While Prisma will provide a great migration experience, users still can always o
 
 ## Rough Commands (wording work in progress)
 
-- `prisma migrate` Created migration files
+- `prisma migrate generate` Create migration files
 
-- `prisma apply-migrations` Applies migrations in the database
+- `prisma migrate apply` Applies migrations in the database
 
 - `prisma apply-datamodel` Only upate the API Schema, but not the underlying database
 
