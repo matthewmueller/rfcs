@@ -60,7 +60,7 @@ async function main() {
 
   // Lookup-by Multi-field indexes
   const john: User = await prisma.users.findOne({
-    name: { firstName: 'John', lastName: 'Doe' }
+    name: { firstName: 'John', lastName: 'Doe' },
   })
 
   // Get many nodes
@@ -70,10 +70,10 @@ async function main() {
   // Ordering
   const usersByEmail = await prisma.users({ orderBy: { email: 'ASC' } })
   const usersByEmailAndName = await prisma.users({
-    orderBy: [{ email: 'ASC' }, { name: 'DESC' }]
+    orderBy: [{ email: 'ASC' }, { name: 'DESC' }],
   })
   const usersByProfile = await prisma.users({
-    orderBy: { profile: { imageSize: 'ASC' } }
+    orderBy: { profile: { imageSize: 'ASC' } },
   })
 
   // Where / filtering
@@ -82,7 +82,7 @@ async function main() {
   // Raw
   await prisma.users({
     where: { email_contains: '@gmail.com' },
-    raw: { orderBy: 'age + postsViewCount DESC' }
+    raw: { orderBy: 'age + postsViewCount DESC' },
   })
 
   const someEmail = 'bob@prisma.io'
@@ -91,8 +91,8 @@ async function main() {
     // where: { email_contains: '@gmail.com' },
     raw: {
       orderBy: 'age + postsViewCount DESC',
-      where: ['email = $1', someEmail]
-    }
+      where: ['email = $1', someEmail],
+    },
   })
 
   // Fluent API
@@ -105,26 +105,15 @@ async function main() {
     where: 'bobs-id',
     select: {
       posts: { select: { comments: true } },
-      friends: true
-    }
-  })
-  
-  const dynamicResult1x: DynamicResult1 = await prisma.users.findOne({
-    where: 'bobs-id',
-    select: {
-      posts: {
-        where: { title_contains: 'Prisma' },
-        select: { comments: true }
-      },
-      friends: true
-    }
+      friends: true,
+    },
   })
 
   const dynamicResult4: DynamicResult1 = await prisma.users.findOne({
     where: 'bobs-id',
     select: {
       posts: { select: { comments: true } },
-      friends: true
+      friends: true,
       // $raw: {
       //   name: {
       //     query: `firstName || ' ' || lastName`,
@@ -134,7 +123,7 @@ async function main() {
       // expr: {
       //   name2: user => user.firstName.add(' ').add(user.lastName)
       // }
-    }
+    },
   })
 
   // PageInfo
@@ -159,12 +148,12 @@ async function main() {
 
   // Aggregations
   const dynamicResult2: DynamicResult2 = await prisma.users({
-    select: { aggregate: { age: { avg: true } } }
+    select: { aggregate: { age: { avg: true } } },
   })
 
   const dynamicResult3: DynamicResult3 = await prisma.users.findOne({
     where: 'bobs-id',
-    select: { posts: { select: { aggregate: { count: true } } } }
+    select: { posts: { select: { aggregate: { count: true } } } },
   })
 
   // GroupBy
@@ -176,16 +165,16 @@ async function main() {
     orderBy: { lastName: 'ASC' },
     select: {
       records: { first: 100 },
-      aggregate: { age: { avg: true } }
-    }
+      aggregate: { age: { avg: true } },
+    },
   })
 
   const groupByResult2: DynamicResult5 = await prisma.users.groupBy({
     raw: { key: 'firstName || lastName', having: 'AVG(age) > 50' },
     select: {
       records: { $first: 100 },
-      aggregate: { age: { avg: true } }
-    }
+      aggregate: { age: { avg: true } },
+    },
   })
 
   // Writing data
@@ -194,18 +183,18 @@ async function main() {
   // Updates
   const updatedUser: User = await prisma.users.update({
     where: 'bobs-id',
-    data: { firstName: 'Alice' }
+    data: { firstName: 'Alice' },
   })
 
   const updatedUserByEmail: User = await prisma.users.update({
     where: { email: 'bob@prisma.io' },
-    data: { firstName: 'Alice' }
+    data: { firstName: 'Alice' },
   })
 
   const upsertedUser: User = await prisma.users.upsert({
     where: 'bobs-id',
     update: { firstName: 'Alice' },
-    create: { id: '...', firstName: 'Alice' }
+    create: { id: '...', firstName: 'Alice' },
   })
 
   // NOTE has Fluent API disabled (incl. nested queries)
@@ -215,24 +204,30 @@ async function main() {
   const updatedUserOCC: User = await prisma.users.update({
     where: 'bobs-id',
     if: { version: 12 },
-    data: { firstName: 'Alice' }
+    data: { firstName: 'Alice' },
   })
 
   const upsertedUserOCC: User = await prisma.users.upsert({
     where: 'bobs-id',
     if: { version: 12 },
     update: { firstName: 'Alice' },
-    create: { id: '...', firstName: 'Alice' }
+    create: { id: '...', firstName: 'Alice' },
   })
 
   const deletedUserOCC: User = await prisma.users.delete({
     if: { version: 12 },
-    where: 'bobs-id'
+    where: 'bobs-id',
   })
 
   const deletedCount: number = await prisma.users.deleteMany()
 
-  // Other
+  // Batching
+  const m1 = prisma.users.create({ firstName: 'Alice' })
+  const m2 = prisma.posts.create({ title: 'Hello world' })
+  const [u1, p1]: [User, Post] = await prisma.batch([m1, m2])
+
+  // Batching with transaction
+  await prisma.batch([m1, m2], { transaction: true })
 
   // Explicit $exec terminator
   const usersQueryWithTimeout = await prisma.users.$exec({ timeout: 1000 })
