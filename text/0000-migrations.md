@@ -11,27 +11,103 @@ Therefore this spec proposes to optionally open up the migration system with the
 
 ## The default case when starting out: No migration files and automatic migrations
 
+Datamodel before
+
+```graphql
+type User {
+  id: ID! @unique
+  name: String!
+}
+```
+
+Datamodel after
+
+```graphql
+type User {
+  id: ID! @unique
+  name: String!
+  address: String!
+}
+```
+
 ```bash
 prisma migrate
 ```
 
+`prisma deploy` will be renamed to `prisma migrate`, as the semantics have changed and we're not necessarily dealing with a server anymore. `prisma migrate` now infers the minimal amount of steps needed to get to the second datamodel.
+
 ## Opting in to the migration files workflow
+
+As soon as we want more control, we can opt in to the file-based migrations system.
 
 ### Controlling migrations by hand
 
 ```bash
 prisma migrate generate # creates a new file called `./migrate/MIGRATION_ID.ts`
+```
+
+We could end up with a file like this:
+
+```ts
+import { migrate } from 'prisma-sdk'
+
+export default migrate(m => [
+  m.createField({
+    model: 'User',
+    name: 'address',
+    type: 'String',
+    isRequired: true,
+  }),
+])
+```
+
+If we want to set a migration value programmatically for all existing users, we can achieve that by adjusting the migration:
+
+```ts
+import { migrate } from 'prisma-sdk'
+
+export default migrate(m => [
+  m.createField({
+    model: 'User',
+    name: 'address',
+    type: 'String',
+    isRequired: false,
+  }),
+  m.execute(async ctx => {
+    for await (const user of ctx.client.users().$stream()) {
+      await ctx.client.updateUser(user.id, {
+        address: 'some default address in the universe ' + Math.random(),
+      })
+    }
+  }),
+  m.updateField({
+    model: 'User',
+    name: 'address',
+    type: 'String',
+    isRequired: true,
+  }),
+])
+```
+
+What we have done here is splitting the creation of a required field into creating an optional field, performing a seeding action on that field and afterwards making the field required. Now we can apply the migration using the following command:
+
+```bash
 prisma migrate apply # applies the migration in the database
 ```
 
-### Skipping the editing of migration files and generate and apply in one step
+Note that we get full type-safety to write this migration script, even the model name for `updateField` could be fully type-safe using a TypeScript union string type.
 
-```bash
-prisma migrate
-```
+### The fast path when opted in
 
-Note, that the semantics of `prisma migrate` slightly changes in the opted-in case. It additionally creates a migration file.
-The behavior towards the database stays the same. It will still afterwards execute the migrations.
+To recap the steps in the previous example, we did the following:
+
+1. `prisma migrate generate` to generate the migration script needed to match the datamodel with the migration scripts
+2. If needed, adjust the generated migration script
+3. `prisma migrate apply` to add the new migration script to the migration table and change the underlying database schema
+
+If the developer just wants to do a quick additive change, without any data migration, `prisma migrate generate` and `prisma migrate apply` can just be abbreviated with `prisma migrate`.
+
+Therefore the semantics of `prisma migrate` slightly changes in the opted-in case. It additionally creates a migration file.
 
 # Motivation
 
@@ -39,6 +115,9 @@ One of the biggest USPs of the Prisma migration system is the automatic transiti
 While this approach is good enough for most of the use cases, it has a few disadvantages that we want to tackle with this spec.
 The first problem is, that it's neither visible, which steps will be executed, nor is the user able to control these steps. Even if the migrations system is running as intended, this introduces an inherent trust issue as users don't have insights to how migrations are being executed.
 Another limitation is, that when a breaking change is performed, such as creating a required field, users of the migrations system must be able to not only migrate the underlying database, but also migrate the data. This could e.g. mean adding default values for a new field for all the records that already exist in the database.
+To accomplish this, it must be possible to run data migrations between two migration steps.
+Orchestrating these data migrations and running them in the right order is the responsibility of the migration runner.
+Therefore Prisma should not impose this burden on the developer, but help running things safe and in the right order, no matter if on a local development machine or in a production CI system.
 
 The biggest difference of this spec to the existing migrations system is, that instead of taking the `datamodel.prisma` file as the source of truth for the actual migration, it's just the source to create migration files. The source of truth for migrations are the migration scripts, which are saved in the migration files that are being generated by the CLI with the help of the migration engine.
 
@@ -47,23 +126,30 @@ The biggest difference of this spec to the existing migrations system is, that i
 ## Contents
 
 - [Migration Table](#migration-table)
+- [Terms](#terms)
 - [Up and Down](#up-and-down)
 - [Modes of operation](#modes-of-operation)
-- [Opting out of Prisma's migration system](#opting-out-of-prismas-migration-system)
-- [Kinds of migrations](#kinds-of-migrations)
 - [The migration loop](#the-migration-loop)
 - [Keeping migrations in lockstep](#keeping-migrations-in-lock-step)
 - [Commands](#commands)
-- [Migration workflow](#migration-workflow)
 - [Filenames & order of execution](#filenames-order-of-execution)
-- [Scenarios](#scenarios)
 - [Migration operations](#migration-operations)
-- [Data migrations](#data-migrations)
-- [Git-based workflows & conflict resolution](#git-based-workflows-conflict-resolution)
-- [Migrations and Seeding](#migrations-and-seeding)
+  - [Schema operations](#schema-operations)
+  - [Data operations](#data-operations)
+  - [Low-level database access](#lowlevel-database-access)
+  - [Migrations which depend on correct data](#migrations-which-depend-on-correct-data)
+  - [Operations which may cause rollbacks](#operations-which-can-provoke-rollbacks)
+  - [Destructive operations](#destructive-operations)
+- [Workflows](#migration-workflows)
+  - [Using data migrations to introduce required fields](#using-data-migrations-to-introduce-required-fields)
+  - [Git-based team workflow: Compatible Changes ](#git-based-workflows-conflict-resolution)
+  - [Git-based team workflow: Incompatible Changes ](#git-based-workflows-conflict-resolution)
+- [Limits of migration inference](#limits-of-migration-inference)
+- [Squashing & Snapshots](#snapshots)
+- [Data Migrations vs Seeding](#migrations-and-seeding)
 - [Rollbacks](#rollbacks)
 - [Rerunning Migrations](#rerunning-migrations)
-- [Low-level Database Access](#lowlevel-database-access)
+- [Opting out of Prisma's migration system](#opting-out-of-prismas-migration-system)
 
 ## Migration Table
 
@@ -78,9 +164,10 @@ These are the benefits of the migration table:
 ### Handling multiple data sources
 
 In the future, Prisma will support multiple data sources at the same time. You then can e.g. have a relation between a type `User` that is persisted in Postgres with a type `Post` that is persisted in MySQL.
-If such a relation will be introduced, Prisma needs to resolve, which type comes from which data source. In order to do this, type names need to be globally unique. If that is the case, an ordinary `createRelation` migration operation can be used to perform that migration.
+If such a relation will be introduced, Prisma needs to resolve, which type comes from which data source.
+In order to do this, type names need to be globally unique. If that is the case, an ordinary `createRelation` migration operation is sufficient to perform that migration.
 
-All migrations of a Prisma project are always stored in one migration table. The question is, where this table is being stored. This will be configurable through the prisma.yml file - a database can be marked as `primary`.
+All migrations of a Prisma project are always stored in one migration table. The question is, where this table is being stored. This will be configurable through the `prisma.yml` file - a database can be marked as `primary`.
 
 ### Alternative storage options
 
@@ -92,40 +179,44 @@ In the version of Prisma of time of writing, the migration table is being stored
 - A file in Google Cloud Storage
 - A table in a different database, which is not being used for the actual data
 
+While these use-cases can enable new workflows, in this spec we're focussing on the migration table that lives in the same database as the data that is being accessed by Prisma.
+
+## Terms
+
+### Migration Operation
+
 ## Up and Down
 
 The avid reader will notice over the course of reading this spec, that we don't talk much about `up` and `down`, which is an integral part of many existing migration systems outside of Prisma.
-Let's discuss, why `up` and `down` is **mostly** not needed in the Prisma migrations system and what the exceptions are.
-In many migration systems as [Flyway](https://flywaydb.org/) or [Go Migrate](https://github.com/golang-migrate/migrate), users provide both the actual migration (aka `up`) and the reversal of the migration `down`.
+Let's discuss, why `up` and `down` is _mostly_ not needed in the Prisma migrations system and what the exceptions are.
+In many migration systems as [Flyway](https://flywaydb.org/) or [Go Migrate](https://github.com/golang-migrate/migrate), users provide both the actual migration (aka `up`) and the reversal of the migration (`down`).
 Providing the reversal by hand is only needed, if the migration system can't deduce it automatically.
 As the Prisma migration steps are defined on a higher abstraction level than the underlying database, Prisma is able to reverse every migration step that it provides.
 
 There are exceptions to this, when Prisma is not able to deduce the reversal of a migration.
-This is the case, when database-specific migrations such as `runSql` are being used. As arbitrary, complex SQL queries could be provided here, Prisma is not supporting the automatic reversal here. These, however shouldn't be necessary in the 99% use-case. The Prisma migrations system even exists for over 2 years without having these escape hatches.
+This is the case, when custom database-specific low-level migrations such as `runSql` or `runMongo` are being defined by the user. As arbitrary, complex SQL queries could be provided here, Prisma is not supporting the automatic reversal here. These, however shouldn't be necessary in the 99% use-case. The Prisma migrations system even exists for over 2 years by now without having these escape hatches, while adding more support for database-specific primitives like indexes.
 
 ## Modes of operation
 
 ### Opting-in and out of file-based migrations
 
-To keep the current ease-of-use and minimal getting started experience, users will be able to start a new Prisma project without knowing the concept of migration files. Prisma will migrate from Datamodel A to Datamodel B with the same mechanics which power the migrations today - automatically determining the steps needed to perform the migration. As soon as the user hits the use-case to enter the migration files-based migration system, a simple `prisma migrate generate` will opt the user into the file-based migration system. From this point on, for each `prisma migrate` new files will be created into a folder called `./migrate`, relative to the `prisma.yml` file. To opt out of this workflow again, the user needs to delete the `./migrate` folder. From there on, the automatic migrations will be active again.
+To keep the current ease-of-use and minimal getting started experience, users will be able to start a new Prisma project without the need to know the concept of migration files.
+Prisma will migrate from Datamodel A to Datamodel B with the same mechanics which power the migrations today - automatically determining the steps needed to perform the migration. As soon as the user hits the use-case to enter the file-based migrations system, a simple `prisma migrate generate` will opt the user in to the file-based migration system. From this point on, for each `prisma migrate` new files will be created into a folder called `./migrate` (which is configurable), relative to the `prisma.yml` file. To opt out of this workflow again, the user needs to delete the `./migrate` folder. From there on, the automatic migrations will be active again.
 
-The difference between the automatic migrations and the file-based migrations is, that automatic migrations don't require to be [in lockstep with the migration table](#keeping-migrations-in-lockstep).
+> The difference between the automatic migrations and the file-based migrations is, that automatic migrations don't require to be [in lockstep with the migration table](#keeping-migrations-in-lockstep).
 
-### Running Prisma as an embedded binary or as a server
+### Running Prisma as an embedded binary or a server
 
 Another dimension that plays a role for migrations is the mode in which Prisma runs. Prisma in the future will both be available as a binary that can be shipped as a library in specific languages and also a stand alone server, that can be deployed as a separate infrastructure component.
-In which mode Prisma is running, has an influence on how the introspection flow looks like. The main relevant difference for migrations is, that the binary gets the datamodel that it takes as a basis to expose the GraphQL API injected on boot time. With this approach, the binary is representing a single-tenant approach, where per running binary only one datamodel can be exposed. In contrast to that, the server gets the datamodel injected in runtime and is able to serve multiple Prisma projects at the same time.
-This means for migrations, that the pure database migration doesn't change, no matter if Prisma binary or Prisma server is being used to access the data.
-The action of applying the datamodel however, differs. While the binary can just be restarted and will serve the new datamodel, the server needs to receive an api call to the migrations api to serve the new datamodel for a specific project. The command that is only needed by the server will be called `prisma apply-datamodel`.
+In which mode Prisma is running, has an influence on how the introspection flow looks like. The main relevant difference for migrations is, that the binary gets the datamodel that it takes as a basis to expose the GraphQL API injected on boot time.
+With this approach, the binary is representing a single-tenant approach, where per running binary only one datamodel can be exposed as an API. In contrast to that, the server gets the datamodel injected in runtime and is able to serve multiple Prisma projects at the same time.
+This means for migrations, that the database migrations doesn't change, no matter if Prisma binary or Prisma server is being used to access the data.
+The action of applying the datamodel however, differs.
+While the binary will get the datamodel injected on boot time, the Prisma server will need to set the datamodel for a project with a specific action. We call that command `prisma apply-datamodel`.
 
 ### Dimensions
 
 Taking these 2 dimensions of opting in or out of the file-based migrations and using a Prisma binary or server thereby represent 4 different modes in which the migration system can be operated.
-
-## Opting out of Prisma's migration system
-
-While Prisma provides a great migration experience, users still can always opt out of the Prisma migration system through running their own migrations, re-introspecting the database and generating a new Prisma Client based on the new datamodel, that results from the introspection. A legit use-case is, that an organization already has experience and proven workflows around an existing migrations system like Rails migrations. In order to incrementally adopt, the team can keep migrating the database using Rails, while generating the Prisma datamodel based on the state of the database schema.
-Prisma then has a read-only relation to the database schema, while still being able to read and write data.
 
 ## The migration loop
 
@@ -179,7 +270,7 @@ As visible in the diagram above, the introspection now closes the loop when it c
 
 > File-based migrations require the migrations to be in [lockstep](<https://en.wikipedia.org/wiki/Lockstep_(computing)>) with the steps saved in the migration table.
 
-### Happy path
+### Lockstep happy path
 
 So if the local migration files have the following migrations:
 
@@ -199,25 +290,26 @@ Migration 2: Steps d,e
 the migration engine will determine, that `Migration 3` is new and needs to be executed.
 In contrast to that, the automatic migrations don't this syncing and just calculate the diff of the datamodel in the local filesystem and the migration table.
 
-### Conflicts
+### Lockstep conflicts
 
-This has the effect, that if the migration engine will reject any migration based on migration files, where the local migration files are out of sync with the remote migration table. This case can only occur, if the user manually changes the migration script.
+Lockstepping has the effect, that the migration engine will reject any migration based on migration files, if the local migration files are out of sync with the remote migration table. This case can only occur, if the user manually changes the migration script.
 Prisma will generate a useful error message stating the exact difference of the migrations.
 The user can do 3 things from here:
 
-1. Fix the migrations based on the feedback the server gave
-2. Delete or rename the migrations folder, execute `prisma migrate generate` to get the migrations stored in the migration table
-3. Use `prisma migrate apply --force-overwrite`, which overrides the whole migration history
-4. Use `prisma migrate apply --ignore-migrations` to deploy based on the latest datamodel.
+1. Fix the migrations based on the feedback the migration engine gave.
+2. Delete or rename the migrations folder, execute `prisma migrate generate` to get the migrations stored in the migration table.
+3. Use `prisma migrate apply --force-overwrite`, which overrides the whole migration history in the migration table.
+4. Use `prisma migrate apply --ignore-migrations` to deploy based on the latest datamodel. This has the same behavior as if the user would be opted out of the migrations system, pretending as if there were no migration files.
 
 ## Commands
 
 ### `prisma migrate`
 
-This is the command users use when starting out with a fresh project.
+This is the command, users use when starting out with a fresh project.
 In the beginning it won't create any migration files.
 Later, when opted in to the file-based migrations, it will perform:
-`prisma migrate` and `prisma migrate apply`, but not `prisma apply-datamodel` (as of now) for the server case.
+`prisma migrate generate` and `prisma migrate apply`, but not `prisma apply-datamodel` for the server case.
+This differs from the behavior of the old `prisma deploy` command. There the equivalent of `prisma apply-datamodel` was automatically executed.
 
 What happens when `prisma migrate` is being executed:
 
@@ -251,37 +343,334 @@ Create a template file to implement a data migration, which gets the Prisma Clie
 
 Applies migrations in the database
 
-### `prisma migrate apply --ignore-migration-files`
+### `prisma migrate apply --snapshot`
 
-Migrates the database based on the latest datamodel and ignores local migration files.
-This is only possible, if there is no migration table yet.
-This command is in particular useful, when there are already a couple of hundred migrations and executing all of them from scratch would take a long time. If in a CI system you quickly want to boot a new server with this datamodel, this is the right command to use.
-This command solves the same problems as squashing in migration systems like [Django](https://docs.djangoproject.com/en/2.1/topics/migrations/#migration-squashing). The mechanism to either migrate based on migration files or a snapshot (in our case the datamodel) is also used in [Active Record Migrations](https://edgeguides.rubyonrails.org/active_record_migrations.html).
+In the case that an application already has many migration files, which would need a long time to be executed from scratch, this command can be used to "squash" all steps to the minimum amount of steps needed to get from an empty database to the latest datamodel that is being provided in the application. This is especially interesting in CI environments, in which speed of setting up a new Project is important.
 
-Important to note: If the `execute` step is being used to seed necessary production data, this command cannot be used.
-Therefore we recommend using the Prisma seeding system for these purposes.
+Read more about this and how this effects data migrations and seeding in the [Snapshots](#snapshots) chapter.
+
+### `prisma migrate apply --dry-run`
+
+Executes the migrations in a dry-run
 
 ### `prisma apply-datamodel`
 
 Only update the API Schema, but not the underlying database
 
-### `prisma dry-run`
+## Filenames & order of execution
 
-Executes the migrations in a dry-run
+Prisma would provide the opionation of calling migration files like this:
 
-### `prisma cleanup`
+`TIMESTAMP-script.ts`, where TIMESTAMP is a unix timestamp. The order in which Prisma reads the migration files is determined by a lexicographical ordering of the file names.
 
-If migrations weren't successful, this can stop the migration running at the moment and rollback it's effects
+Each migration both has a language specific file including the migration script and a corresponding snapshot of the datamodel:
 
-### `prisma baseline`
+```
+1551279957819-script.ts
+1551279957819-datamodel.prisma
+```
 
-This command introspects the database and add the introspection result to the Prisma Migration Table as a baseline for future deployments
+## Migration Operations
 
-## Migration Workflow
+### Schema operations
 
-The new workflow how migrations should work with Prisma like this:
+A detailed list of all schema manipulation operations that Prisma will provide [can be found here](https://gist.github.com/mavilein/5b4a7407a4dfde9c070d26f276b0aa13)
 
-A user initiates a service with `prisma init` and ends up with a project folder like this:
+All migration operation, that Prisma ships out of the box are reversible. That means that Prisma can for a migration step `createField` automatically infer the `deleteField` reversion of the operation.
+Therefore, every migration operation can both be used explicitly in the migration script in the `up` part of a migration or implicitly perfomed by Prisma in the unlikely event of a rollback.
+
+### Data operations
+
+One of the main reasons to open up the migrations system is to allow data migrations.
+In TypeScript, they can be defined using the `execute` operation:
+
+```ts
+import { migrate } from 'prisma-sdk'
+
+export default migrate(m => [
+  m.createField({
+    model: 'User',
+    name: 'address',
+    type: 'String',
+    isRequired: false,
+  }),
+  m.execute(async ctx => {
+    for await (const user of ctx.client.users().$stream()) {
+      await ctx.client.updateUser(user.id, {
+        address: 'some default address in the universe ' + Math.random(),
+      })
+    }
+  }),
+  m.updateField({
+    model: 'User',
+    name: 'address',
+    type: 'String',
+    isRequired: true,
+  }),
+])
+```
+
+The context object `ctx` and the `client` property will typed. This will allow for type safe data migrations that can be run in between two migration steps are being executed.
+When the 3 steps defined here will be sent to the migration engine, the `.execute` step will be replaced by a no-op.
+The advantage is, that the number of steps in the migration script and in the migration table will be equal, therefore it will be easier to ensure the lockstep between migration script and migration table.
+Important to note: In this example we have the `m.execute` operation in the same file as some schema manipulation operations.
+When in production, you probably want to keep them in separate files, as you otherwise can't adjust your application in the meantime. We will discuss how this workflow will exactly look like in [Using data migrations to introduce required fields](#using-data-migrations-to-introduce-required-fields).
+
+All built-in migration operations that Prisma ships, like `m.createField`, are reversible (some with destructive change), because Prisma knows the semantics of each operation. That means in the case of a rollback, Prisma is able to revert any migration operation.
+
+When custom `m.execute` functions are provided though, Prisma can't infer the reversion as arbitrary code could have been run.
+If the user wants to be able to revert the actions that have been executed in a `m.execute` operation, she can provide the reversal using an object with an `up` and `down` property just like so:
+
+```ts
+import { migrate } from 'prisma-sdk'
+
+export default migrate(m => [
+  m.createField({
+    model: 'User',
+    name: 'address',
+    type: 'String',
+    isRequired: false,
+  }),
+  m.execute({
+    up: async ctx => {
+      for await (const user of ctx.client.users().$stream()) {
+        await ctx.client.updateUser(user.id, {
+          address: 'some default address in the universe ' + Math.random(),
+        })
+      }
+    },
+    down: async ctx => {
+      await ctx.client.updateManyUsers({
+        data: {
+          address: null,
+        },
+      })
+    },
+  }),
+  m.updateField({
+    model: 'User',
+    name: 'address',
+    type: 'String',
+    isRequired: true,
+  }),
+])
+```
+
+In cases that the `up` data migration is migrating data for a field that just has been created as in the example above, a reversal is not needed, as reverting `createField` is a destructive change anyways and will end up with a schema without that particular field.
+
+### Low-level database access
+
+#### SQL
+
+To allow manipulating the underlying database directly, we provide a SQL interface:
+
+```ts
+import { migrate } from 'prisma-sdk'
+
+export default migrate(m => [m.runSql(`CREATE TABLE X`, `DROP TABLE X`), m.runSql(`CREATE TABLE Y`)])
+```
+
+Users can optionally provide the `down` step to be able to reverse the migration.
+
+#### MongoDB
+
+An underlying MongoDB database could be manipulated like this:
+
+```ts
+import { migrate } from 'prisma-sdk'
+
+export default migrate(m => [
+  m.runMongo(
+    [
+      {
+        createIndexes: 'mycollection',
+        indexes: [
+          {
+            key: {
+              username: 1,
+              created: -1,
+            },
+            name: 'username_sort_by_asc_created',
+            background: true,
+          },
+          {
+            key: {
+              email: 1,
+            },
+            name: 'unique_email',
+            unique: true,
+            background: true,
+          },
+        ],
+      },
+    ],
+    [
+      {
+        dropIndexes: 'mycollection',
+        index: 'username_sort_by_asc_created',
+      },
+      {
+        dropIndexes: 'mycollection',
+        index: 'unique_email',
+      },
+    ],
+  ),
+])
+```
+
+### Migrations which depend on correct data
+
+The following migrations can not be performed, if the actual data in the database doesn't have the right structure.
+Prisma checks for the data validity before performing the actual migration, but between the check and the actual migration, there still could be records inserted that are making the migration fail.
+
+#### `updateField` - make field required
+
+If a field already exists and a few records have the value `null` for this field, it is not possible to set that field to required.
+
+#### `updateRelation` - make relation required
+
+If a 1:1 or 1:n has been optional in the to 1 part and should be turned into a required relation, all records have to be scanned in the database to ensure, that this constraint is being fulfilled.
+
+Example:
+
+```graphql
+type User {
+  id: ID! @id
+  posts: [Post!]!
+}
+
+type Post {
+  id: ID @id
+  user: User
+}
+```
+
+If `user` will now become required, the datamodel will be updated like this:
+
+```graphql
+type User {
+  id: ID! @id
+  posts: [Post!]!
+}
+
+type Post {
+  id: ID @id
+  user: User!
+}
+```
+
+Now all `Post`s already need to have a user associated. If that is not the case, the migration can't be performed.
+
+#### `updateRelation` - turn n:1 into 1:1 relation
+
+There are two ways to define 1:n relation in Prisma:
+
+1. Explicitly set the back relation
+
+```graphql
+type User {
+  id: ID! @id
+  posts: [Post!]!
+}
+
+type Post {
+  id: ID @id
+  user: User
+}
+```
+
+2. Don't provide the back relation
+
+```graphql
+type User {
+  id: ID! @id
+}
+
+type Post {
+  id: ID @id
+  user: User
+}
+```
+
+In both cases, Prisma will create a 1:n relation between User and Post.
+If now an explicit `to one` back relation will be added from User:
+
+```graphql
+type User {
+  id: ID! @id
+  post: Post
+}
+
+type Post {
+  id: ID @id
+  user: User
+}
+```
+
+This now means that for each User there must only be one Post and vise versa.
+Depending on the current configuration of actual relations in the database, this migration operation may get rejected.
+
+#### `unique`
+
+If a unique constraint will be applied on a field of a model that already has data, no duplicates are allowed.
+
+#### `updateEnum` - removing an enum value
+
+If there is a data record, which still uses the enum value that is going to be removed, the migration will get rejected.
+
+### Operations which may cause rollbacks
+
+#### 3rd party changes to the database schema
+
+Indeed any operation can cause a rollback.
+The cause for this could be, that just before the operation will be performed and after Prisma has checked the data for validity, the underlying database schema may have been changed from another source, which is not part of the Prisma project.
+This is a very unlikely event and should be prevented by the database admin by not giving access to schema migrations to third parties.
+Prisma introspects the database once and creates in internal datamodel representation from that.
+From that point on, all migrations are based on the virtual datamodel representation Prisma has.
+
+#### Changes to the data after the validity check
+
+In the same manner as changes to the database schema can cause rollbacks, this can also happen with changes to data records, that are stored in the database. Right after a unique check has been performed on a specific field, there could be a quick insert in between the validity check of the database and the actual migration.
+
+> Both problems can generally be prevented by locking the whole database for the time of the migration. This is an easy fix for the situation, but obviously not affordable for all application.
+
+The solution for failed migrations in general is very often adding a `m.execute` operation right before the migration will be executed, to ensure that the data is in the right shape.
+
+### Destructive operations
+
+All migration operation, that Prisma ships out of the box are reversible. That means that Prisma can for a migration step `createField` automatically infer the `deleteField` reversion of the operation.
+An orthogonal dimension to this is, if an operation is destructive. Destructive here refers to data loss in the specific model, relation or field.
+
+The following operations are destructive and should therefore be use with care. These are the typical "scary" operations, which in some production systems are even not used anymore, as depending on the application the implications can be hard to reason about.
+
+#### `deleteField`
+
+If a field is being removed, the data that has been stored in that field will automatically also be deleted.
+
+#### `deleteModel`
+
+If a model is being removed, the data that has been stored in that model, all fields and relations will automatically also be deleted.
+
+#### `updateField` which changes the data type
+
+The following changes in a field will cause data loss:
+As foreign key columns already have an index defined, this operation should be fairly quick even on big data sets.
+
+- Change of scalar type: If the scalar type e.g. changes from `String` to `Int`, Prisma will clear the data. The user will just be able to provide a general default value for these fields.
+- Change from list to non-list or vise-versa
+
+#### `updateRelation`
+
+- Change of cardinality (e.g. 1:1 to 1:n). This could be fixed in a future version of Prisma by actually migrating the data records. As foreign keys are indexed anyways, this operation should be fairly fast.
+- Even if the cardinality stays the same, a change of the concrete persistence of the relation (Link Table or Inline) also will result in data loss right now. This is exactly the same use-case as the change of cardinality.
+
+## Workflows
+
+### Using data migrations to introduce required fields
+
+The new migrations workflow will look like this:
+
+A user initiates a new project with `prisma init` and ends up with a folder structure like this:
 
 ```
 .
@@ -299,14 +688,14 @@ type User {
 }
 ```
 
-The user then executes the `prisma migrate` command. The migrate command sends the datamodel to the migration engine, which then automatically migrates the database to the new datamodel.
+The user then executes the `prisma migrate` command. This command sends the datamodel to the migration engine, which then automatically migrates the database to the new datamodel.
 
 Every time the user does changes in the datamodel.prisma, a simple `prisma migrate` updates the underlying database schema. This is how migrations with Prisma work as of the time of writing.
 
 Let's say the developer using Prisma now runs the application in production and 100,000 users register for the app.
 She finds out, that she wants to turn the single `name` field into a `firstName` and `lastName` field, which both ultimately should be required.
 
-The following steps are how this situation can be solved with the old and new migrations system:
+The migration of the database could be solved with the following steps both in the old and new migrations system:
 
 1. Introduce the `firstName` and `lastName` field for the `User` type, run `prisma migrate`.
 2. Update the application code to use the `firstName` and `lastName` fields when creating new users.
@@ -318,7 +707,7 @@ While creating and running the data migration script of step 3 is probably fairl
 As soon as these data migrations are introduced multiple times, the situation gets even worse.
 This is where the new Prisma file-based migrations come into play. To accomplish steps 1-4 with the file-based migrations, the following concrete steps are needed:
 
-### 1. Add `firstName` and `lastName` to the `datamodel.prisma` file:
+#### 1. Add `firstName` and `lastName` to the `datamodel.prisma` file:
 
 ```graphql
 type User {
@@ -330,7 +719,7 @@ type User {
 }
 ```
 
-### 2. Run `prisma migrate generate`. This creates 2 migration files: The first one including the migration we already ran, the second one representing the change of adding the new two fields:
+#### 2. Run `prisma migrate generate`. This creates 2 migration files: The first one including the initial migration we already ran, the second one representing the change of adding the new two fields:
 
 `0001.ts`
 
@@ -369,13 +758,13 @@ export default migrate(m => [
 ])
 ```
 
-### 3. Run `prisma migrate apply` to add the fields to the database schema
+#### 3. Run `prisma migrate apply` to add the fields to the database schema
 
 The migration engine will recognize, that `0001.ts` has been executed already and will execute the steps provided in `0002.ts`.
 
-### 4. Update the application code to use the `firstName` and `lastName` fields when creating new users. (Step 2)
+#### 4. Update the application code to use the `firstName` and `lastName` fields when creating new users. (Step 2)
 
-### 5. Run `prisma migrate generate --data-migration` to bootstrap the data migration script we will need split `name` into `firstName` and `lastName`.
+#### 5. Run `prisma migrate generate --data-migration` to bootstrap the data migration script we will need split `name` into `firstName` and `lastName`.
 
 The content of this file will look like this:
 
@@ -418,7 +807,7 @@ export default migrate(m => [
 
 By running `prisma migrate apply`, the Prisma CLI will now run the data migration. The migration engine will add a _noop_ migration into the migration table to mark this migration as executed.
 
-### 6. Now we can remove the `name` field and make our new fields required:
+#### 6. Now we can remove the `name` field and make our new fields required:
 
 ```graphql
 type User {
@@ -432,19 +821,24 @@ type User {
 By running `prisma migrate`, a new migration file will be created and the migration will immediately executed.
 The filesystem will now look like this:
 
-## Filenames & order of execution
+```
+.
+├── datamodel.prisma
+├── migrate
+│   ├── 0001_1548425145186.ts
+│   ├── 0002-1548425240000.ts
+│   ├── 0003-1548425340000-data-migration.ts
+│   └── 0004-1548425450000.ts
+└── prisma.yml
+```
 
-Prisma would provide the opionation of calling migration files like this:
+### Git-based team workflow: Compatible Changes
 
-`VVVV_TIMESTAMP.ts`, where VVVV are 4 digits for the auto incrementing version and TIMESTAMP is a unix timestamp. The order in which Prisma reads the migration files is determined by a lexicographical ordering of the file names.
+Bob checks out the code locally and both Jen and Bob have a local version of Prisma running with their own database.
+Both Bob and Jen now perform a change to the datamodel, a local Migration file will be created and Jen pushes first.
+Bob doesn't pay too much attention which code Jen already pushed, just pulls and as he doesn't get any conflict, also pushes his code:
 
-## Scenarios
-
-### Scenario 1: Two compatible changes at the same time
-
-Bob checks out the code locally and both Jen and Bob have a local version of Prisma running with their own database. Both Bob and Jen now perform a change to the datamodel, a local Migration file will be created and Jen pushes first. Bob doesn't pay too much attention what code Jen already pushed, just pulls and as he doesn't get any conflict, also pushes his code:
-
-Jen's new `0002-1548425150000.ts`:
+Jen's new `1548425150000-script.ts`:
 
 ```ts
 import { migrate } from 'prisma-sdk'
@@ -459,7 +853,7 @@ export default migrate(m => [
 ])
 ```
 
-Bob's new `0002-1548425140000.ts`
+Bob's new `1548425159999-script.ts`
 
 ```ts
 import { migrate } from 'prisma-sdk'
@@ -480,9 +874,9 @@ After the merge, the filesystem will look like this:
 .
 ├── datamodel.prisma
 ├── migrate
-│   ├── 0001_1548425145186.ts
-│   ├── 0002-1548425140000.ts
-│   └── 0002-1548425150000.ts
+│   ├── 1548425145186-script.ts
+│   ├── 1548425140000-script.ts
+│   ├── 1548425149999-script.ts
 └── prisma.yml
 ```
 
@@ -497,13 +891,14 @@ type User {
 }
 ```
 
-Prisma at this point should warn in a CI step, that two migrations have been created with the same version. But as these migrations are compatible, Prisma is able to merge them.
+The migration engine will realize, that Jen's changes have already been applied and will as usual add Bob's migration.
+The assumption here is, that merge conflicts always occur with one of the changes already merged in.
 
-## Scenario 2: Two incompatible changes at the same time
+### Git-based team workflow: Incompatible Changes
 
 Let's assume Jen now removes the `name` field from the `User` type, but Bob just wants to make it optional. This is a change that can't be solved automatically - we have a merge conflict.
 
-The first barrier to prevent this from happening is a Git-based merge conflict in the `prisma.datamodel` file:
+The first barrier to prevent this from happening is a Git-based merge conflict in the `datamodel.prisma` file:
 
 Jen's `datamodel.prisma` will look like this:
 
@@ -556,117 +951,118 @@ export default migrate(m => [
 ])
 ```
 
-Prisma would fail in this case and ask for manual resolution from the user.
+The migrations system would be able to recognize, that in order to execute `updateField`, `createField` is a prerequisite.
 
-## Scenario 3: Async Workflows, migrating data
+## Limits of migration inference
 
-In order to introduce a required field, that we need to initialize with proper data, we can provide a hook point for users to execute data transformations:
+One of the main tasks of the migration engine is to infer the needed migration steps to accomplish the migration from datamodel A to datamodel B.
+In specific use-cases, the declarative nature of the datamodel definition leaves ambiguities. Then the migration engine is not able to infer steps, that make sense. Right now only one concrete scenario causes the migration engine to not be able to infer:
 
-```ts
-import { migrate } from 'prisma-sdk'
+If we start with this datamodel:
 
-export default migrate(m => [
-  m.createField({
-    model: 'User',
-    name: 'address',
-    type: 'String',
-    isRequired: false,
-  }),
-  m.execute(async ctx => {
-    for (const user of ctx.client.users().$stream()) {
-      await ctx.client.updateUser(user.id, {
-        address: 'some default address in the universe ' + Math.random(),
-      })
-    }
-  }),
-  m.updateField({
-    model: 'User',
-    name: 'address',
-    type: 'String',
-    isRequired: true,
-  }),
-])
+```graphql
+type A {
+  id: ID! @id
+  b: B! @relation(name: "AB1")
+  b2: B! @relation(name: "AB2")
+}
+
+type B {
+  id: ID! @id
+  a: A! @relation(name: "AB1")
+  a2: A! @relation(name: "AB2")
+}
 ```
 
-The client could potentially even be typed with the new field. Note, that this requires a temporary endpoint, which already includes the new field, even if the migration is not yet done.
+And change it to this datamodel:
 
-## Scenario 4: SQL / Database native code
+```graphql
+type A {
+  id: ID! @id
+  b3: B!
+}
 
-To allow manipulating the underlying database directly, we provide a SQL interface:
-
-```ts
-import { migrate } from 'prisma-sdk'
-
-export default migrate(m => [m.runSql(`CREATE TABLE X`, `DROP TABLE X`), m.runSql(`CREATE TABLE Y`)])
+type B {
+  id: ID! @id
+  a3: A!
+}
 ```
 
-## Scenario 5: MongoDB access
+Prisma won't be able to infer, if the relation `AB1` should be reused, the relation `AB2` reused or if a new relation should be created.
 
-The underlying MongoDB database could be manipulated like this:
+## Squashing & Snapshots
 
-```ts
-import { migrate } from 'prisma-sdk'
+Over the course of months and years, the number of migrations can grow to a couple of hundred.
+There may be many redundant migrations, which cancel each other out, as first removing a field and then creating it again.
+When in a CI environment it can be useful to initialize a new Prisma project from scratch in an empty database.
+This process should be as fast a possible though and could become slow with multiple hundred migration files.
 
-export default migrate(m => [
-  m.runMongo(
-    [
-      {
-        createIndexes: 'mycollection',
-        indexes: [
-          {
-            key: {
-              username: 1,
-              created: -1,
-            },
-            name: 'username_sort_by_asc_created',
-            background: true,
-          },
-          {
-            key: {
-              email: 1,
-            },
-            name: 'unique_email',
-            unique: true,
-            background: true,
-          },
-        ],
-      },
-    ],
-    [
-      {
-        dropIndexes: 'mycollection',
-        index: 'username_sort_by_asc_created',
-      },
-      {
-        dropIndexes: 'mycollection',
-        index: 'unique_email',
-      },
-    ],
-  ),
-])
-```
+This is an inherent problem of all file-based migrations systems and several solutions already exist in other migration systems.
+The [Django Migration System](https://docs.djangoproject.com/en/2.1/topics/migrations/#migration-squashing) chooses squashing of migration files to accomplish this optimization. As we have our migration files in lockstep with the migration table though (which gives us many guarantees), this approach is not feasible with this migration approach.
+[Active Record Migrations](https://edgeguides.rubyonrails.org/active_record_migrations.html) solves the migration performance issue by allowing to perform migrations either _based on migration files_ or a _schema snapshot file_. This snapshot-based migration also fits nicely into Prismas new migrations system. There is an important implementation detail required, though.
+If one would implement this naively, the CLI could let the migration engine infer the necessary migration steps and create the migration table in the blank database with one migration, which just includes these steps.
+However, if you want to continue to migrate this database with further steps that build on the existing ones, the migration engine will not allow this, as migrations stored in the migration table have to be in lockstep with migrations stored in the local migration files.
+In order to have the best of both worlds, the migration engine **pretends** as if it would execute all migration steps and saves it like that to the migration table (which can be done very fast), but still just executes the minimum amount of steps needs to get to the desired datamodel.
 
-## Migration Operations
+This feature will be available with the `prisma migrate apply --snapshot` command.
 
-These are the possible operations, which the language specific migration definitions (like TypeScript or Go) will generate:
+### Important limitations of this approach
 
-https://gist.github.com/mavilein/5b4a7407a4dfde9c070d26f276b0aa13
+- This is only possible with database, where no migration table exists yet.
+- If the `m.execute` step is being used to seed necessary production data, this command should not be used. The CLI will warn the user about this, but the user will be able to continue nevertheless.
 
-## Migrations and Seeding
+Therefore we recommend using the Prisma seeding system for seeding data that you later need in your production code.
 
-https://edgeguides.rubyonrails.org/active_record_migrations.html#migrations-and-seed-data
+## Data Migrations vs Seeding
 
-- How seeding and deployment from snapshot emulate database forking
+As mentioned in the previous section, using the `m.execute` operation to migrate data should only be used when necessary.
+If possible, the Prisma seeding system should be preferred, as this then works nicely with the snapshot-based migrations.
+
+With snapshot-based migrations and seeding, we now accomplish very nice side effects. They basically emulate "forking" a database.
+One can quickly set up the current state of the database using the snapshot-based migrations and seed the database with necessary data to run tests in CI.
+Forks of the database based on production data are not yet part of this spec, as this is rather an infrastructure and performance problem outside of this migration spec.
+
+Active Record deals with the same problem and therefore also recommends to [favor seeding over data migrations]([Active Record Migrations](https://edgeguides.rubyonrails.org/active_record_migrations.html) if possible.
+
+## Rollbacks
+
+In the case that a migration step doesn't succeed, the whole migration will be rolled back. If there are `n` unapplied migrations and the last migration fails, only exactly that one migration will be rolled back. The datamodel of the time of rollback will both be printed and the user will be able to read it in the corresponding migration datamodel file.
+The idea is, that migration steps are the smallest atomic unit, while a migration is a collection of these.
+A migration can only fully succeed or fail.
 
 ## Rerunning Migrations
 
-- Undoing and rerunning specific migrations using migrations from scratch & force push
+If a migration succeeded, it won't be possible to rerun it. However, once the migration engine decided, that a migration is valid, tries to execute it and fails during execution, it must be possible to retry that migration execution.
+
+## Opting out of Prisma's migration system
+
+While Prisma provides a great migration experience, users still can always opt out of the Prisma migration system through running their own migrations, re-introspecting the database and generating a new Prisma Client based on the new datamodel, that results from the introspection. A legit use-case is, that an organization already has experience and proven workflows around an existing migrations system like Rails migrations. In order to incrementally adopt, the team can keep migrating the database using Rails, while generating the Prisma datamodel based on the state of the database schema.
+Prisma then has a read-only relation to the database schema, while still being able to read and write data.
+
+<!---
+
+
+
+
+
+
+
+End of detailed design
+
+
+
+
+
+
+
+
+--->
 
 # Drawbacks
 
-We could provide a completely free JavaScript API, without forcing the user to provide an array of operations. However, this wouldn't allow us to check migrations for validity upfront, so Prisma can't provide any guarantees and users would easily get into inconsistent states with their database.
-
 ## Streaming the changes for new items that are being created while making a field required
+
+## Splitting a "create required field" operation into "create optional field" + data migration is manual work
 
 # Alternatives
 
@@ -685,7 +1081,7 @@ To opt into the file-based migrations, a single `prisma migrate generate` is suf
 
 ## When opted-in to the migrations system, should it be possible to skip `prisma migrate generate` with `prisma migrate` even if there are new changes?
 
-## How do migrations in Go look like?
+## How do migrations look like in Go?
 
 ## How could migrations integrate with CI/CD and the Cloud?
 
@@ -695,6 +1091,7 @@ To opt into the file-based migrations, a single `prisma migrate generate` is suf
 
 ## Should we introduce a "transform" hook?
 
+This is a feature for the further future, but not part of this spec.
 See `name` -> `firstName` and `lastName` example.
 
 ## Should we allow different generic sources for migration files?
@@ -746,49 +1143,10 @@ export default migrate(m => [
 
 Systems like Rails follow this approach. This would make migrations easier to reason about and prevent inconsistent data state. For a big production application this would however not be acceptable.
 
-## Other
+## How to generate a (type-safe) client for the run commands?
 
-- [ ] How to generate a (type-safe) client for the run commands?
-- [ ] Evaluate `dependsOn` concept
-- [ ] Add option to prevent breaking changes
+## How to handle breaking changes? Keep the --force flag?
 
-## Archive
+## Should `down` be required for low-level db migrations?
 
-```
-.
-├── datamodel.prisma
-├── migrate
-│   ├── 0001_1548425145186.ts
-│   ├── 0002-1548425240000.ts
-│   ├── 0003-1548425340000-data-migration.ts
-│   └── 0004-1548425450000.ts
-└── prisma.yml
-```
-
-The user then executes `prisma migrate`, which now creates a new migration file in the filesystem and applies that migration to the database:
-
-```
-.
-├── datamodel.prisma
-├── migrate
-│   └── 0001_1548425145186.ts
-└── prisma.yml
-```
-
-The content of `0001_1548425145186.ts` looks like this:
-
-```ts
-import { migrate } from 'prisma-sdk'
-
-export default migrate(m => [
-  m.createModel({
-    model: 'User',
-    fields: {
-      id: { name: 'id', type: 'ID' }
-      name: { name: 'name', type: 'String' }
-    }
-  })
-])
-```
-
-Let's call the Prisma user Jen. Jen now pushes the project to Github and shares the project with her colleague Bob. The migration is now checked into version control.
+## If a migration runs in dev, because there is no data, but it fails in prod, because there is a record which is not compatible with the new change, how should we help the user in that situation?
