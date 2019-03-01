@@ -137,7 +137,7 @@ The biggest difference of this spec to the existing migrations system is, that i
 - [The migration loop](#the-migration-loop)
   - [1. Automatic migrations](#1-automatic-migrations)
   - [2. File-based migrations](#2-file-based-migrations)
-  - [3. Database introspection](#3-database-instrospection)
+  - [3. Database introspection](#3-database-introspection)
 - [Keeping migrations in lockstep](#keeping-migrations-in-lockstep)
   - [Lockstep happy path](#lockstep-happy-path)
   - [Lockstep conflicts](#lockstep-conflicts)
@@ -152,7 +152,7 @@ The biggest difference of this spec to the existing migrations system is, that i
   - [`prisma migrate rollback`](#prisma-migrate-rollback)
   - [`prisma migrate rollback --pending`](#prisma-migrate-rollback---pending)
   - [`prisma apply-datamodel`](#prisma-apply-datamodel)
-- [Filenames & order of execution](#filenames-order-of-execution)
+- [Filenames & order of execution](#filenames--order-of-execution)
 - [Migration operations](#migration-operations)
   - [Schema operations](#schema-operations)
   - [Data operations](#data-operations)
@@ -170,9 +170,9 @@ The biggest difference of this spec to the existing migrations system is, that i
   - [Git-based team workflow: Incompatible Changes ](#git-based-workflows-conflict-resolution)
   - [Introducing uniqueness in staging and production](#introducing-uniqueness-in-staging-and-production)
 - [Limits of migration inference](#limits-of-migration-inference)
-- [Squashing & Snapshots](#snapshots)
+- [Squashing & Snapshots](#squashing--snapshots)
   - [Requirements](#requirements)
-- [Data Migrations vs Seeding](#migrations-and-seeding)
+- [Data Migrations vs Seeding](#data-migrations-vs-seeding)
 - [Rollbacks](#rollbacks)
 - [Rerunning Migrations](#rerunning-migrations)
 - [Opting out of Prisma's migration system](#opting-out-of-prismas-migration-system)
@@ -234,7 +234,7 @@ Prisma will migrate from Datamodel A to Datamodel B with the same mechanics whic
 
 > The difference between the automatic migrations and the file-based migrations is, that automatic migrations don't require to be [in lockstep with the migration table](#keeping-migrations-in-lockstep).
 
-### Binary vs Server
+### Binary vs server
 
 Another dimension that plays a role for migrations is the mode in which Prisma runs. Prisma in the future will both be available as a binary that can be shipped as a library in specific languages and also a stand alone server, that can be deployed as a separate infrastructure component.
 In which mode Prisma is running, has an influence on how the introspection flow looks like. The main relevant difference for migrations is, that the binary gets the datamodel that it takes as a basis to expose the GraphQL API injected on boot time.
