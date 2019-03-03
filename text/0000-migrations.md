@@ -48,7 +48,7 @@ As soon as we want more control, we can opt in to the file-based migrations syst
 prisma migrate generate # creates a new file called `./migrate/MIGRATION_ID.ts`
 ```
 
-We could end up with a file like this:
+We end up with a file like this:
 
 ```ts
 import { migrate } from 'prisma-sdk'
@@ -97,7 +97,7 @@ What we have done here is splitting the creation of a required field into creati
 prisma migrate apply # applies the migration in the database
 ```
 
-Note that we get full type-safety to write this migration script, even the model name for `updateField` could be fully type-safe using a TypeScript union string type.
+Note that we get full type-safety to write this migration script, even the model name for `updateField` will be fully type-safe using a TypeScript union string type.
 
 ### The fast path when opted in
 
@@ -236,7 +236,8 @@ A migration is defined as an array of migration steps, which are each instances 
 
 ## Migration Table
 
-An important primitive, which the Prisma migrations system has already been using before the creation of this spec, is the Prisma migration table. This is a table, which exists in the database that the migrations are being executed on. It consists of the history of migrations, that have already been executed and the currently running migrations.
+An important primitive, which the Prisma migrations system has already been using before the creation of this spec, is the Prisma schema, which lives in the same database as the actual data. It turned out, that this Prisma schema only includes one table, the migration table. So we're changing the requirement to only need one table, which can live in the same schema as the data.
+This is a table, which exists in the database that the migrations are being executed on. It consists of the history of migrations, that have already been executed and the currently running migration. Only one migration can run at the same time.
 These are the benefits of the migration table:
 
 - By setting a lock on the table, it prevents two migrations from being executed at the same time
@@ -270,8 +271,24 @@ The reason you may want to have these files in separate storages is, that if you
 The avid reader will notice over the course of reading this spec, that we don't talk much about `up` and `down`, which is an integral part of many existing migration systems outside of Prisma.
 Let's discuss, why `up` and `down` is _mostly_ not needed in the Prisma migrations system and what the exceptions are.
 In many migration systems as [Flyway](https://flywaydb.org/) or [Go Migrate](https://github.com/golang-migrate/migrate), users provide both the actual migration (aka `up`) and the reversal of the migration (`down`).
+If we for example create a table in up, the reversal (`down`) is to remove the table:
+
+`up`
+
+```sql
+CREATE TABLE X
+```
+
+`down`
+
+```sql
+DROP TABLE X
+```
+
+The `down` to the `up` is needed to rollback migrations.
+
 Providing the reversal by hand is only needed, if the migration system can't deduce it automatically.
-As the Prisma migration steps are defined on a higher abstraction level than the underlying database, Prisma is able to reverse every migration step that it provides.
+As the Prisma is aware of the semantics of all migration steps, Prisma is able to reverse them automatically.
 
 There are exceptions to this, when Prisma is not able to deduce the reversal of a migration.
 This is the case, when custom database-specific low-level migrations such as `runSql` or `runMongo` are being defined by the user. As arbitrary, complex SQL queries could be provided here, Prisma is not supporting the automatic reversal here. These, however shouldn't be necessary in the 99% use-case. The Prisma migrations system even exists for over 2 years by now without having these escape hatches, while adding more support for database-specific primitives like indexes.
@@ -453,7 +470,7 @@ Only update the API Schema, but not the underlying database
 
 ## Filenames & order of execution
 
-Prisma would provide the opionation of calling migration files like this:
+Prisma has an opinionated naming scheme for migration file.
 
 `TIMESTAMP-script.ts`, where TIMESTAMP is a unix timestamp. The order in which Prisma reads the migration files is determined by a lexicographical ordering of the file names.
 
@@ -568,7 +585,7 @@ Users can optionally provide the `down` step to be able to reverse the migration
 
 #### MongoDB
 
-An underlying MongoDB database could be manipulated like this:
+An underlying MongoDB database can be manipulated like this:
 
 ```ts
 import { migrate } from 'prisma-sdk'
@@ -624,8 +641,8 @@ This is an overview which operations may cause certain effects
 | CreateField                         |                     | ✅                     |                                                 |                                       |
 | DeleteField                         | ✅                  | ✅                     |                                                 | ✅                                    |
 | UpdateField - rename field          | ✅                  | ✅                     |                                                 |                                       |
-| UpdateField - make field required   |                     | ✅                     | ✅                                              |                                       |
-| UpdateField - change type           | ✅                  | ✅                     |                                                 | ✅                                    |
+| UpdateField - make field required   | ✅                  | ✅                     | ✅                                              |                                       |
+| UpdateField - change type           | ✅                  | ✅                     | ✅                                              | ✅                                    |
 | UpdateField - list <> non list      | ✅                  | ✅                     |                                                 | ✅                                    |
 | UpdateField - make field unique     |                     | ✅                     | ✅                                              |                                       |
 | CreateEnum                          |                     | ✅                     |                                                 |                                       |
@@ -767,7 +784,7 @@ The solution for failed migrations in general is very often adding a `m.execute`
 ### Destructive operations (potential data loss)
 
 All migration operation, that Prisma ships out of the box are reversible. That means that Prisma can for a migration step `createField` automatically infer the `deleteField` reversion of the operation.
-An orthogonal dimension to this is, if an operation is destructive. Destructive here refers to data loss in the specific model, relation or field.
+Some operations can cause data loss. We call such operations destructive.
 
 The following operations are destructive and should therefore be use with care. These are the typical "scary" operations, which in some production systems are even not used anymore, as depending on the application the implications can be hard to reason about.
 
@@ -789,7 +806,7 @@ As foreign key columns already have an index defined, this operation should be f
 
 #### `updateRelation`
 
-- Change of cardinality (e.g. 1:1 to 1:n). This could be fixed in a future version of Prisma by actually migrating the data records. As foreign keys are indexed anyways, this operation should be fairly fast.
+- Change of cardinality (e.g. 1:1 to 1:n). This will be fixed in a future version of Prisma by actually migrating the data records. As foreign keys are indexed anyways, this operation should be fairly fast.
 - Even if the cardinality stays the same, a change of the concrete persistence of the relation (Link Table or Inline) also will result in data loss right now. This is exactly the same use-case as the change of cardinality.
 
 ### Informing the user
@@ -819,7 +836,7 @@ If the migration engine realizes during the `prisma migrate apply` command, that
 the user will be required to confirm them. This can either happen interactively if supported by the environment, or especially in CI
 environments the confirmation can be provided with a `--force` flag as a CLI arg.
 
-The CLI output for the interactive could look like this:
+The CLI output for the interactive will look like this:
 
 ```
 You are going to perform destructive changes (with potential data loss).
@@ -947,22 +964,22 @@ import { migrate } from 'prisma-sdk'
 
 export default migrate(m => [
   m.execute(async ({ client }) => {
-    const batch = []
-    for await (const user of client.users().$stream()) {
-      // TODO: build more sophisticated name splitting
-      const [firstName, lastName] = user.name.split(/\s+/)
-      batch.push(
-        client.updateUser({
+    for await (const users of client
+      .users()
+      .$stream({ batch: true })
+      const batch = users.map(user => {
+        const [firstName, lastName] = user.name.split(/\s+/)
+        return ctx.prisma.users.update({
           where: user.id,
           data: {
             name: null,
             firstName,
             lastName,
           },
-        }),
-      )
+        })
+      })
+      await ctx.prisma.batch(batch)
     }
-    await client.batch(batch)
   }),
 ])
 ```
@@ -1119,7 +1136,7 @@ export default migrate(m => [
 ])
 ```
 
-The migrations system would be able to recognize, that in order to execute `updateField`, `createField` is a prerequisite.
+The migrations system will be able to recognize, that in order to execute `updateField`, `createField` is a prerequisite.
 
 ### Introducing uniqueness in staging and production
 
@@ -1145,7 +1162,7 @@ type User {
 }
 ```
 
-The inferred migration script to accomplish this change would look like this:
+The inferred migration script to accomplish this change is:
 
 ```ts
 import { migrate } from 'prisma-sdk'
@@ -1346,6 +1363,10 @@ End of detailed design
 
 
 --->
+
+# Non-Goals
+
+A few more advanced concepts
 
 # Drawbacks
 
