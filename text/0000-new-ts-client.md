@@ -54,9 +54,7 @@ embed Profile {
 async function main() {
   // Get single node
   const bob: User = await prisma.users.findOne('bobs-id')
-  const alice: User = await prisma.users.findOne({
-    email: 'alice@prisma.io',
-  })
+  const alice: User = await prisma.users.findOne({ email: 'alice@prisma.io' })
 
   // Lookup-by Multi-field indexes
   const john: User = await prisma.users.findOne({
