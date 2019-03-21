@@ -99,7 +99,7 @@ async function main() {
     .posts({ first: 50 })
 
   // Query Object API
-  const dynamicResult1: DynamicResult1 = await prisma.users.findOne({
+  const userWithPostsAndFriends: DynamicResult1 = await prisma.users.findOne({
     where: 'bobs-id',
     select: {
       posts: { select: { comments: true } },
