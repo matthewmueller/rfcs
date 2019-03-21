@@ -390,6 +390,7 @@ prisma.users({
 - [ ] Double check cursor, streaming and batching API
 - [ ] Update(many) API to use existing values
 - [ ] Better `raw` integration with query builders like Knex
+- [ ] Do we need `$` prefix (e.g. `$withPageInfo`)
 
 # Future topics
 
