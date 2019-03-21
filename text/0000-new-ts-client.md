@@ -328,6 +328,8 @@ TODO:
 
 TODO
 
+## `raw` fallbacks
+
 ## Batching
 
 TODO:
@@ -387,6 +389,7 @@ prisma.users({
   - [ ] `findAll` vs `findMany`
 - [ ] Double check cursor, streaming and batching API
 - [ ] Update(many) API to use existing values
+- [ ] Better `raw` integration with query builders like Knex
 
 # Future topics
 
