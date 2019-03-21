@@ -305,10 +305,64 @@ type DynamicResult5 = {
 
 - Can be applied to every paginable list and stream
 
+## Nested "thenable" API
+
+```ts
+await user.create({
+  role,
+  email,
+  posts: post.upsertByEmail({
+    title
+  })
+})
+```
+
+## Aggregations
+
+TODO:
+
+- Aggregations API
+- Extend `where` API to support aggregations
+
+## Group By
+
+TODO
+
+## Batching
+
+TODO:
+
+- Add option to not return data
+
+## API shortcuts
+
+### Where
+
+```ts
+prisma.users.deleteMany('id')
+prisma.users.deleteMany(['id1', 'id2'])
+
+prisma.users({
+  where: {
+    id: ['id1', 'id2'], // instead of `_in` or `OR`
+    email: { endsWith: '@gmail.com' },
+  }
+})
+
+prisma.users({
+  where: {
+    name: { contains: 'Bob' },
+    email: { contains: ['prisma.io', 'gmail.com'] }, // instead of `_in` or `OR`
+  }
+})
+```
+
 # Drawbacks
 
 
 # Alternatives
+
+- `$nested` API
 
 
 # Adoption strategy
@@ -318,4 +372,23 @@ type DynamicResult5 = {
 
 
 # Unresolved questions
+
+- [ ] Type mapping and static field preselection (see [comment in #4](https://github.com/prisma/rfcs/pull/4#issuecomment-471202364))]
+- [ ] (Type-safe) raw field selection
+- [ ] API shortcuts (`where`, `aggregate`, `select`, ...)
+- [ ] Rethink generated type name scheme (incl. pluralization)
+- [ ] Real-time API (subscriptions/live queries)
+- [ ] Unit of work API (see #5)
+- [ ] Life-cycle hooks
+- [ ] `exists` API
+- [ ] API for atomic operations
+- [ ] Explore idea of nested "thenable` API
+- [ ] Consolidate with Go client API
+  - [ ] `findAll` vs `findMany`
+- [ ] Double check cursor, streaming and batching API
+- [ ] Update(many) API to use existing values
+
+# Future topics
+
+- [ ] Rails-like scopes (see [Sequelize](http://docs.sequelizejs.com/manual/tutorial/scopes.html))
 
