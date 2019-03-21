@@ -75,18 +75,18 @@ async function main() {
   })
 
   // Where / filtering
-  await prisma.users({ where: { email_contains: '@gmail.com' } })
+  await prisma.users({ where: { email: { contains: '@gmail.com' }}})
 
   // Raw
   await prisma.users({
-    where: { email_contains: '@gmail.com' },
+    where: { email: { contains: '@gmail.com' } },
     raw: { orderBy: 'age + postsViewCount DESC' },
   })
 
   const someEmail = 'bob@prisma.io'
   await prisma.users({
     // where is overwritten when provided in raw
-    // where: { email_contains: '@gmail.com' },
+    // where: { email: { contains: '@gmail.com' }},
     raw: {
       orderBy: 'age + postsViewCount DESC',
       where: ['email = $1', someEmail],
@@ -140,7 +140,7 @@ async function main() {
   // GroupBy
   const groupByResult: DynamicResult4 = await prisma.users.groupBy({
     key: 'lastName',
-    having: { age_avg_gt: 10 },
+    having: { age: { avgGt: 10 } },
     where: { isActive: true },
     first: 100,
     orderBy: { lastName: 'ASC' },
