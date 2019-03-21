@@ -330,13 +330,21 @@ TODO
 
 ## `raw` fallbacks
 
+TODO
+
 ## Batching
 
 TODO:
 
 - Add option to not return data
 
+## Pagination
+
+TODO
+
 ## API shortcuts
+
+TODO
 
 ### Where
 
