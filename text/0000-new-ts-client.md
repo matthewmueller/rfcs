@@ -380,6 +380,7 @@ prisma.users({
 - [ ] Update(many) API to use existing values
 - [ ] Better `raw` integration with query builders like Knex
 - [ ] Do we need `$` prefix (e.g. `$withPageInfo`)
+- [ ] Silent mutations [prisma/prisma#4075](https://github.com/prisma/prisma/issues/4075)
 
 # Future topics
 
