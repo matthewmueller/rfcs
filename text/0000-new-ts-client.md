@@ -107,23 +107,6 @@ async function main() {
     },
   })
 
-  const dynamicResult4: DynamicResult1 = await prisma.users.findOne({
-    where: 'bobs-id',
-    select: {
-      posts: { select: { comments: true } },
-      friends: true,
-      // $raw: {
-      //   name: {
-      //     query: `firstName || ' ' || lastName`,
-      //     type: 'String'
-      //   }
-      // },
-      // expr: {
-      //   name2: user => user.firstName.add(' ').add(user.lastName)
-      // }
-    },
-  })
-
   // PageInfo
   const bobsPostsWithPageInfo: PageInfo<Post> = await prisma.users
     .findOne('bobs-id')
