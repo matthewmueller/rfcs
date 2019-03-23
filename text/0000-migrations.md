@@ -113,20 +113,20 @@ One of these ambiguities is renaming a field.
 If we have the following datamodel:
 
 ```graphql
-type User {
-  id: ID! @id
-  name: String!
-  address: String!
+model User {
+  id: ID @id
+  name: String
+  address: String
 }
 ```
 
 And want to rename the `name` field, it's not clear if it should be renamed based on the `address` field or the `name` field:
 
 ```graphql
-type User {
-  id: ID! @id
-  name2: String!
-  address2: String!
+model User {
+  id: ID @id
+  name2: String
+  address2: String
 }
 ```
 
@@ -138,10 +138,10 @@ Information for this transition between datamodels is needed.
 One way to solve this is using the `@db` directive:
 
 ```graphql
-type User {
-  id: ID! @id
-  name: String! @db(name: "name2")
-  address: String! @db(name: "address2")
+model User {
+  id: ID @id
+  name: String @db(name: "name2")
+  address: String @db(name: "address2")
 }
 ```
 
@@ -191,10 +191,10 @@ Your migration folder could just contain SQL scripts if you would like to.
 Let's say Alice and Bob start developing in their own branches based on the following datamodel:
 
 ```graphql
-type User {
-  id: ID! @id
-  name: String!
-  address: String!
+model User {
+  id: ID @id
+  name: String
+  address: String
 }
 ```
 
@@ -214,9 +214,9 @@ And these migrations:
 Alice removes the `address` field and creates a new migration `4`.
 
 ```graphql
-type User {
-  id: ID! @id
-  name: String!
+model User {
+  id: ID @id
+  name: String
 }
 ```
 
@@ -252,19 +252,19 @@ His `migrate` folder will look like this:
 The main `datamodel.mdl` file will look like this:
 
 ```graphql
-type User {
-  id: ID! @id
-  name: String!
+model User {
+  id: ID @id
+  name: String
 <<<<<<< HEAD
-  address: String
+  address: String?
 =======
 >>>>>>> master
-  posts: [Post!]!
+  posts: [Post]
 }
 
-type Post {
-  id: ID! @id
-  title: String!
+model Post {
+  id: ID @id
+  title: String
 }
 ```
 
@@ -351,3 +351,10 @@ The difference is that now we're introducing files in the filesystem and allow n
 In addition with this migration system more complex merge conflicts can occur.
 
 Both use-cases of hooks and conflicts need to be properly documented.
+
+# Unresolved questions
+
+- [ ] Summarize and describe new concepts and terminology
+- [ ] Spec out the workflow of generating a migration
+- [ ] Spec out how migration "hooks" are working (e.g. `before.up.sql`) as it's depending on individual connectors
+- [ ] Spec out CLI output of each migration related command
