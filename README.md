@@ -9,7 +9,17 @@ a bit of a design process and produce a consensus among the Prisma core team.
 The "RFC" (request for comments) process is intended to provide a consistent
 and controlled path for new features to enter the project.
 
-[Active RFC List](https://github.com/prisma/rfcs/pulls)
+Here are all the currently [active RFCs](https://github.com/prisma/rfcs/pulls):
+
+- [Prisma 2: Datamodel](https://github.com/prisma/rfcs/blob/datamodel/text/0000-datamodel.md)
+- [Prisma 2: Migrations](https://github.com/prisma/rfcs/blob/migrations2/text/0000-migrations.md)
+- [Prisma server and Prisma CLI version sync](https://github.com/divyenduz/rfcs/blob/cli-server-sync/text/0000-cli-server-sync.md)
+- [Disable hooks flag](https://github.com/divyenduz/rfcs/blob/disable-hooks/text/0000-disable-hooks.md)
+- [Basic aggregation support for prisma](https://github.com/prisma/rfcs/blob/prisma-basic-aggregation-support/text/0000-prisma-basic-aggregation-support.md)
+- [Unit of work](https://github.com/prisma/rfcs/blob/unit-of-work/text/0000-unit-of-work.md)
+- [Prisma Client Generator API](https://github.com/prisma/rfcs/blob/client-generators/text/0000-client-generators.md)
+- [Prisma Expression Language](https://github.com/prisma/rfcs/blob/prisma-expression-support/text/0003-prisma-expression-support.md)
+- [Prisma 2: TypeScript/JavaScript Client API](https://github.com/prisma/rfcs/blob/new-ts-client-rfc/text/0000-new-ts-client.md)
 
 Prisma is still **actively developing** this process, and it will still change
 as more features are implemented and the community settles on specific
