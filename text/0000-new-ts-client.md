@@ -366,7 +366,8 @@ prisma.users({
 
 - [ ] Connection management when used with embededded query engine
 - [ ] Non-CRUD API operations
-- [ ] Type mapping and static field preselection (see [comment in #4](https://github.com/prisma/rfcs/pull/4#issuecomment-471202364))]
+- [ ] Add support for `AS OF TIMESTAMP` queries (see e.g. [Oracle](https://docs.oracle.com/cd/B19306_01/backup.102/b14192/flashptr002.htm))
+- [ ] Type mapping and static field preselection (see [comment in #4](https://github.com/prisma/rfcs/pull/4#issuecomment-471202364))
 - [ ] (Type-safe) raw field selection
 - [ ] API shortcuts (`where`, `aggregate`, `select`, ...)
 - [ ] Rethink generated type name scheme (incl. pluralization)
