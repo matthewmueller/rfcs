@@ -356,5 +356,6 @@ Both use-cases of hooks and conflicts need to be properly documented.
 
 - [ ] Summarize and describe new concepts and terminology
 - [ ] Spec out the workflow of generating a migration
+  - [ ] Generate client into `node_modules` (also consider versioning e.g. `npx prisma@2.x generate`)
 - [ ] Spec out how migration "hooks" are working (e.g. `before.up.sql`) as it's depending on individual connectors
 - [ ] Spec out CLI output of each migration related command
