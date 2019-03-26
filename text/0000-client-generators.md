@@ -279,4 +279,5 @@ The usage of generators has already great resources. The part, that needs more a
 - [ ] Official generators (see [PR comment](https://github.com/prisma/rfcs/pull/4#issuecomment-462790202))
 - [ ] Output location for generated files should be in `node_modules` (`$GOPATH` or similar) by default
 - [ ] Should we have configuration for casing? For example, allow snake_casing in the datamodel but render it as CamelCase in the client.
+- [ ] Rethink embedding credentials during generation.
 
