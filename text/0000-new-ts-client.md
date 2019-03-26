@@ -365,6 +365,7 @@ prisma.users({
 # Unresolved questions
 
 - [ ] Connection management when used with embededded query engine
+- [ ] Non-CRUD API operations
 - [ ] Type mapping and static field preselection (see [comment in #4](https://github.com/prisma/rfcs/pull/4#issuecomment-471202364))]
 - [ ] (Type-safe) raw field selection
 - [ ] API shortcuts (`where`, `aggregate`, `select`, ...)
