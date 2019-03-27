@@ -705,9 +705,6 @@ writers(where: { blogs_all: { id_ne: "abba" _relation_becameWriterOn_gt: "2018" 
 
 **Implementation in TS client**
 
-> Note: This section is experimental. Here are some resources on Fluent API design:
-> - https://visualstudiomagazine.com/articles/2013/12/01/best-practices-for-designing-a-fluent-api.aspx
-
 ```typescript
 // Inserting relation data
 
