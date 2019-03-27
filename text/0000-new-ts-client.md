@@ -376,9 +376,12 @@ prisma.users({
 - [ ] Life-cycle hooks
 - [ ] `exists` API
 - [ ] API for atomic operations
-- [ ] Explore idea of nested "thenable` API
+- [ ] API composition
+  - [ ] Query fragments similar to Fauna
+  - [ ] Explore idea of nested "thenable" API
 - [ ] Consolidate with Go client API
   - [ ] `findAll` vs `findMany`
+  - [ ] Fluent API to build filters / query fragments
 - [ ] Double check cursor, streaming and batching API
 - [ ] Update(many) API to use existing values
 - [ ] Better `raw` integration with query builders like Knex
