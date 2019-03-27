@@ -600,13 +600,14 @@ model Writer {
 
 Connectors for relational databases will implement this as two tables with a single relation column:
 
--------------------------------
-| *Blog* | id | authorId |
--------------------------------
 
--------------------------------
-| *Writer* | id |
--------------------------------
+| **Blog** | |
+|----------|-|
+| id | authorId |
+
+| **Writer** |
+|------------|
+| id |
 
 The relational database is unable to model thge constraint that a Writer can only be related to a single Blog. This constraint is upheld by Prisma and reflected in the exposed API.
 
@@ -628,13 +629,14 @@ model Writer {
 
 Connectors for relational databases will implement this as two tables with a single relation column, exactly like the 1-1 relation:
 
--------------------------------
-| *Blog* | id | authorId |
--------------------------------
 
--------------------------------
-| *Writer* | id |
--------------------------------
+| **Blog** | |
+|----------|-|
+| id | authorId |
+
+| **Writer** |
+|------------|
+| id |
 
 The implementation in the relational database matches the 1-m semantics, and these are reflected in the exposed API.
 
@@ -662,21 +664,22 @@ relation BlogToWriter {
 
 Connectors for relational databases will implement this as two data tables and a single join table:
 
--------------------------------
-| *Blog* | id |
--------------------------------
 
--------------------------------
-| *Writer* | id |
--------------------------------
+| **Blog** |
+|----------|
+| id |
 
--------------------------------
-| *BlogToWriter* | blogId | writerId | becameWriterOn |
--------------------------------
+| **Writer** |
+|------------|
+| id |
+
+|**BlogToWriter** | | |
+|-----------------|-|-|
+| blogId | writerId | becameWriterOn |
 
 Relations using a join table feel exactly like any other relation. Additionally, any extra information in the join table can be written, read and used to filter in a query:
 
-*Implementation in wire protocol*
+**Implementation in wire protocol**
 
 ```groovy
 # Inserting relation data
@@ -700,7 +703,7 @@ writers {
 writers(where: { blogs_all: { id_ne: "abba" _relation_becameWriterOn_gt: "2018" } })
 ```
 
-*Implementation in TS client*
+**Implementation in TS client**
 
 > Note: This section is experimental. Here are some resources on Fluent API design:
 > - https://visualstudiomagazine.com/articles/2013/12/01/best-practices-for-designing-a-fluent-api.aspx
