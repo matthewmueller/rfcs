@@ -717,19 +717,57 @@ prisma.writers.create({ id: 'a'})
               .end()
 
 
-# Reading relation data
+// Reading relation data
 
 const writersWithBlogsRelationData: WriterWithBlogsIncludingRelationData[] = await prisma.writers // can we avoid this extreme type explosion?
   .findAll()
   .blogsWithRelationData()
 
-# Filtering by relation data
+// Filtering by relation data
 
 const writers: Writer[] = await prisma.writers
   .findAll({ where: { blogs_all: { id_ne: "abba" _relation_becameWriterOn_gt: "2018" } } })
 
 const writers: Writer[] = await prisma.writers
   .findAll({ where: { blogs_all: { data: {id_ne: "abba" } relation: { becameWriterOn_gt: "2018" } } } }) // assume this is possible with discriminated union
+```
+
+**ALTERNATIVE: Implementation in TS client if we don't have a special relation construct**
+
+```groovy
+model Blog {
+  id: ID! @id
+  authors: [BlogToWriter]
+}
+
+model Writer {
+  id: ID! @id
+  blogs: [BlogToWriter]
+}
+
+model BlogToWriter { # This is a normal model
+  blog: Blog!
+  writer: Writer!
+  becameWriterOn: DateTime!
+}
+```
+
+```typescript
+// Inserting relation data
+
+prisma.writers.create({ id: 'a', blogs: { create: [{ blog: { id: "b" }, becameWriterOn: "${now()}" }] } })
+
+// Reading relation data
+
+const writersWithBlogsRelationData: WriterWithBlogsWithBlog[] = await prisma.writers
+  .findAll()
+  .blogs()
+  .blog()
+
+// Filtering by relation data
+
+const writers: Writer[] = await prisma.writers
+  .findAll({ where: { blogs_all: { blog: { id_ne: "abba" },  becameWriterOn_gt: "2018" } } })
 ```
 
 ### Aggregations
