@@ -92,61 +92,6 @@ model PostToCategory {
 
 ===
 
-# Introduction
-
-This RFC proposes a new syntax for the Prisma Datamodel. Main focus areas:
-
-- Break from the existing GraphQL SDL syntax where it makes sense
-- Clearly separate responsibilities into two categories: Core Prisma primitives and Connector specific primitives
-
-## Example
-
-This example illustrate many aspects of the proposed syntax:
-
-```groovy
-model User @db(name: "user") {
-  id: ID! @id
-  createdAt: DateTime @createdAt
-  email: String @unique
-  name: String?
-  role: Role @default(value: USER)
-  posts: [Post]
-  profile: Profile? @relation(link: INLINE)
-}
-
-model Profile @db(name: "profile") {
-  id: ID @id
-  user: User
-  bio: String
-}
-
-model Post @db(name: "post") {
-  id: ID @id
-  createdAt: DateTime @createdAt
-  updatedAt: DateTime @updatedAt
-  title: String
-  author: User
-  published: Boolean @default(value: false)
-  categories: [Category]? @relation(link: TABLE, name: "PostToCategory")
-}
-
-model Category @db(name: "category") {
-  id: ID @id
-  name: String
-  posts: [Post] @relation(name: "PostToCategory")
-}
-
-model PostToCategory @db(name: "post_to_category") @linkTable {
-  post: Post
-  category: Category
-}
-
-enum Role {
-  USER
-  ADMIN
-}
-```
-
 ## Core Prisma primitives
 
 Prisma provides a set of core primitives:
