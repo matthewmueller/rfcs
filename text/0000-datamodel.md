@@ -629,6 +629,202 @@ For a start, it might be better to just allow some pre-defined generators:
 
 # Relations
 
+There are three kinds of relations: 1-1, 1-m and m-n. In relational databases 1-1 and 1-m is modeled the same way, and there is no built-in support for m-n relations.
+
+Prisma core provides explicit support for all 3 relation types and connectors must ensure that their guarantees are upheld:
+
+- *1-1* The return value on both sides is a nullable single value. Prisma prevents accidentally storing multiple records in the relation. This is an improvement over the standard implementation in relational databases that model 1-1 and 1-m relations the same, relying on application code to uphold this constraint.
+- *1-m* The return value on one side is a nullable single value, on the other side a list that might be empty.
+- *m-n* The return value on both sides is a list that might be empty. This is an improvement over the standard implementation in relational databases that require the application developer to deal with implementation details such as an intermediate table / join table. In Prisma, each connector will implement this concept in the way that is most efficient on the given storage engine and expose an API that hides the implementation details.
+
+### 1-1
+
+A writer can have exactly 1 blog and a blog has a single author:
+
+```groovy
+model Blog {
+  id: ID! @id
+  author: Writer
+}
+
+model Writer {
+  id: ID! @id
+  blog: Blog
+}
+```
+
+Connectors for relational databases will implement this as two tables with a single relation column:
+
+-------------------------------
+| *Blog* | id | authorId |
+-------------------------------
+
+-------------------------------
+| *Writer* | id |
+-------------------------------
+
+The relational database is unable to model thge constraint that a Writer can only be related to a single Blog. This constraint is upheld by Prisma and reflected in the exposed API.
+
+### 1-m
+
+A writer can have multiple blogs
+
+```groovy
+model Blog {
+  id: ID! @id
+  author: Writer
+}
+
+model Writer {
+  id: ID! @id
+  blogs: [Blog]
+}
+```
+
+Connectors for relational databases will implement this as two tables with a single relation column, exactly like the 1-1 relation:
+
+-------------------------------
+| *Blog* | id | authorId |
+-------------------------------
+
+-------------------------------
+| *Writer* | id |
+-------------------------------
+
+The implementation in the relational database matches the 1-m semantics, and these are reflected in the exposed API.
+
+### m-n
+
+Blogs can have multiple writers
+
+```groovy
+model Blog {
+  id: ID! @id
+  authors: [Writer]
+}
+
+model Writer {
+  id: ID! @id
+  blogs: [Blog]
+}
+
+relation BlogToWriter {
+  blog: Blog!
+  writer: Writer!
+  becameWriterOn: DateTime!
+}
+```
+
+Connectors for relational databases will implement this as two data tables and a single join table:
+
+-------------------------------
+| *Blog* | id |
+-------------------------------
+
+-------------------------------
+| *Writer* | id |
+-------------------------------
+
+-------------------------------
+| *BlogToWriter* | blogId | writerId | becameWriterOn |
+-------------------------------
+
+Relations using a join table feel exactly like any other relation. Additionally, any extra information in the join table can be written, read and used to filter in a query:
+
+*Implementation in wire protocol*
+
+```groovy
+# Inserting relation data
+
+mutation createWriter(data: {
+  id: "a"
+  blogs: { create: { id: "b" } relationData: { becameWriterOn: "${now()}" }}
+})
+
+# Reading relation data
+
+writers {
+  blogsConnection {
+    node { id }
+    relationData { becameWriterOn }
+  }
+}
+
+# Filtering by relation data
+
+writers(where: { blogs_all: { id_ne: "abba" _relation_becameWriterOn_gt: "2018" } })
+```
+
+*Implementation in TS client*
+
+> Note: This section is experimental. Here are some resources on Fluent API design:
+> - https://visualstudiomagazine.com/articles/2013/12/01/best-practices-for-designing-a-fluent-api.aspx
+
+```typescript
+// Inserting relation data
+
+prisma.writers.create({ id: 'a', blogs: { create: [{ id: "b", _relationData: { becameWriterOn: "${now()}" } }] } })
+prisma.writers.create({ id: 'a', blogs: { createWithRelationData: [{ data: { id: "b" }, relation: { becameWriterOn: "${now()}" } }] } })
+prisma.writers.create({ id: 'a', blogs: { create: [{ data: { id: "b" }, relation: { becameWriterOn: "${now()}" } }] } }) // can discriminated union types handle this?
+prisma.writers.create({ id: 'a'})
+              .createBlogs({id: "b"}, )
+              .withRelationData({ becameWriterOn: "${now()}" })
+              .end()
+
+
+# Reading relation data
+
+const writersWithBlogsRelationData: WriterWithBlogsIncludingRelationData[] = await prisma.writers // can we avoid this extreme type explosion?
+  .findAll()
+  .blogsWithRelationData()
+
+# Filtering by relation data
+
+const writers: Writer[] = await prisma.writers
+  .findAll({ where: { blogs_all: { id_ne: "abba" _relation_becameWriterOn_gt: "2018" } } })
+
+const writers: Writer[] = await prisma.writers
+  .findAll({ where: { blogs_all: { data: {id_ne: "abba" } relation: { becameWriterOn_gt: "2018" } } } }) // assume this is possible with discriminated union
+```
+
+### Aggregations
+
+> NOTE: this section is an aside examining the appliccability of the above API design to aggregations
+> We will use the same datamodel
+
+```typescript
+
+# Reading aggregate data
+
+// aggregate record data
+const writersWithBlogsRelationData: DynamicType[] = await prisma.writers
+  .findAll()
+  .blogsWithRelationData({select: {data: {$aggregate: { id: { avg: true } } }}})
+
+// aggregate relation data
+const writersWithBlogsRelationData: DynamicType[] = await prisma.writers
+  .findAll()
+  .blogsWithRelationData({select: {relation: {$aggregate: { becameWriterOn: { avg: true } } }}})
+
+// or the same result relying on top level select
+const writersWithBlogsRelationData: DynamicType[] = await prisma.writers
+  .findAll({select: {id: true, blogs: {id: true, $aggregate: { id: { avg: true } }}}}) // note that we don't need the {data, relation} intermediate type
+
+const writersWithBlogsRelationData: DynamicType[] = await prisma.writers
+  .findAll({select: {id: true, blogs: {data: {id: true}, relation: { $aggregate: { becameWriterOn: { avg: true } }}}}}) // The {data, relation} intermediate type is the only way to access relation
+
+
+# Filtering by aggregation data
+
+const writers: Writer[] = await prisma.writers
+  .findAll({ where: { blogs_all: { id_ne: "abba" }, blogs_aggregate: { id_avg_gt: "2018"} } })
+
+const writers: Writer[] = await prisma.writers
+  .findAll({ where: { blogs_all: { id_ne: "abba" }, blogs_relation_aggregate: { becameWriterOn_avg_gt: "2018"} } })
+```
+
+ !!! END
+
 As with Prisma, N:M relations are linked under the hood. For object DBs, we would use an array of FKs. For relational DBs, a link table is used. This table is usually hidden. 
 
 Sometimes a link table should be visible or is explicitly desired for a 1:n or 1:1 relation. We have two ways to resolve this: 
