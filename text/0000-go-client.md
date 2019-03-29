@@ -12,7 +12,7 @@ in a idiomatic way that looks handwritten.
 The current Go client too verbose and doesn't look like how a normal Go
 developer would write Go code.
 
-The goal of this RFC is to refactor the Go client to look like hand-written Go code as if a developer had unlimited time to dream up the best API for their models interacting with their database of choice.
+The goal of this RFC is to refactor the Go client to look like handwritten Go code as if a developer had unlimited time to dream up the best API for their models interacting with their database of choice.
 
 We should also be able to extend this client as we come up with new ways
 of expressing relations and incorporate more databases.
