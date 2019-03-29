@@ -521,4 +521,7 @@ client.Customers.New(&stripe.CustomerParams{
 
 > Optional, but suggested for first drafts. What parts of the design are still TBD?
 
+- [ ] Consider for `db.Query` (and everything "raw" access related) that models can live in different datasources
+- [ ] Enable chaining syntax to traverse relations (Idea: `_.chain`)
+
 **TODO**
