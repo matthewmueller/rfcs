@@ -240,7 +240,6 @@ allUsers, err := users.FindMany(db,
 
 ##### Additional Notes:
 
-- I'm not sure TS client example is accurate. Seeking clarity here: https://github.com/prisma/rfcs/pull/2#issuecomment-477907961
 - May also want to define constants here, e.g. `prisma.DESC` & `prisma.ASC`.
 
 #### Find all with Composite Order
@@ -273,7 +272,7 @@ allUsers, err := users.FindMany(db,
 
 ##### Additional Notes:
 
-- I'm not sure TS client example is accurate. Seeking clarity here: https://github.com/prisma/rfcs/pull/2#issuecomment-477907961
+- todo
 
 #### Find all with Nested Order
 
