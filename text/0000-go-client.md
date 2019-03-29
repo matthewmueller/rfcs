@@ -14,10 +14,8 @@ developer would write Go code.
 
 As a senior Go developer put it:
 
-```
 👨‍💻: prisma.PostCreateManyWithoutAuthorInput{}
-‍👨‍💻: would rather just write sql
-```
+<br/>👨‍💻: would rather just write sql
 
 The goal of this RFC is to refactor the Go client to look like handwritten Go code as if a developer had unlimited time to dream up the best API for their models interacting with their database of choice.
 
