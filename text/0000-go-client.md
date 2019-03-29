@@ -30,7 +30,7 @@ The basic design of this Go client is informed by 6 iterations I did last year w
 
 I built this client while simultaneously addressing the data needs of the app. In other words, if the app needed a feature, I added it. If it felt wrong in the app, I rethought the API.
 
-The Prisma client has a much more ambitious API that spans multiple languages. I'm breaking a lot of new ground in this RFC, particularly around nested operations. Everything in this RFC ought to be questioned and debated.
+The Prisma client has a much more ambitious API that spans multiple databases and languages. I'm breaking a lot of new ground in this RFC, particularly around nested operations. Everything in this RFC ought to be questioned and debated.
 
 The goal is to have a memorable, simple API that is a delight to use for Go developers. Let's find a design together that charms!
 
