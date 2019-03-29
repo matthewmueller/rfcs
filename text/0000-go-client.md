@@ -28,7 +28,7 @@ of expressing relations and incorporate more databases.
 
 The basic design of this Go client is informed by 6 iterations I did last year while developing a type-safe PostgreSQL client for [Standup Jack](https://standupjack.com).
 
-I built this client while simultaneously addressing the data needs of my app. In other words, if I needed it in the app, I added it to the generator. If it felt wrong in the app, I rethought the client API.
+I built this client while simultaneously addressing the data needs of the app. In other words, if the app needed a feature, I added it. If it felt wrong in the app, I rethought the API.
 
 The Prisma client has a much more ambitious API that spans multiple languages. I'm breaking a lot of new ground in this RFC, particularly around nested operations. Everything in this RFC ought to be questioned and debated.
 
