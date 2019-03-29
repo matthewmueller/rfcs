@@ -455,9 +455,9 @@ const dynamicResult1: DynamicResult1 = await prisma.users.findOne({
 
 - todo
 
-## What's `db` and why pass it in each time?
+## What is `db` and why pass it in each time?
 
-`db` in the Go examples above is an instanceof the `prisma.DB` interface. That interface would look like this:
+`db` in the Go examples above is an instance of the `prisma.DB` interface. That interface would look like this:
 
 ```go
 // DB interface for Prisma's client APIs.
@@ -470,8 +470,10 @@ type DB interface {
 }
 ```
 
-- Generally, I think this is a better design. You're layering on complexity by composition rather than by encapsulation.
-- Some people will want to pass in a request-level `context.Context`, some will not want to bother. This change makes it optional.
+**Advantages:**
+
+- Generally speaking, I think this is a better design. You're layering on complexity by composition rather than by encapsulation.
+- However the main reason is that some people will want to pass in a request-level `context.Context`, some will not want to bother. `db` makes `ctx` optional.
   - For example, you can pass in a context-wrapped database: `db := &DBContext{ctx, db}` if you're Google. If you're me, I prefer skipping this step.
   - Generated code becomes stateless, `goimports` (automatic imports) works better
 - Easier to layer in logging: `db := &DBLogger{logger, DBContext{ctx, db}}`
