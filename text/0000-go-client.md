@@ -133,7 +133,7 @@ Find a single resource with a `unique(email)` constraint.
 
 ```ts
 const alice: User = await prisma.users.findOne({
-  where: { email: 'alice@prisma.io' },
+  where: { email: 'alice@prisma.io' }
 })
 ```
 
@@ -183,7 +183,7 @@ Find a single resource with a `unique(first_name, last_name)` constraint.
 
 ```ts
 const john: User = await prisma.users.findOne({
-  name: { firstName: 'John', lastName: 'Doe' },
+  name: { firstName: 'John', lastName: 'Doe' }
 })
 ```
 
@@ -234,7 +234,7 @@ Find a single resource by non-unique fields.
 
 ```ts
 const john: User = await prisma.users.findOne({
-  name: { firstName: 'John', lastName: 'Doe' },
+  name: { firstName: 'John', lastName: 'Doe' }
 })
 ```
 
@@ -387,7 +387,7 @@ Find an ordered list of items matching the condition.
 ```ts
 const allUsers = await prisma.users({
   where: { firstName: 'John', lastName: 'Doe' },
-  orderBy: { email: 'ASC' },
+  orderBy: { email: 'ASC' }
 })
 ```
 
@@ -443,7 +443,7 @@ Find an ordered list of items matching the condition: `order by email ASC name D
 ```ts
 const allUsers = await prisma.users({
   where: { firstName: 'John', lastName: 'Doe' },
-  orderBy: [{ email: 'ASC' }, { name: 'DESC' }],
+  orderBy: [{ email: 'ASC' }, { name: 'DESC' }]
 })
 ```
 
@@ -498,7 +498,7 @@ Find an ordered list of items matching the condition.
 
 ```ts
 const usersByProfile = await prisma.users({
-  orderBy: { profile: { imageSize: 'ASC' } },
+  orderBy: { profile: { imageSize: 'ASC' } }
 })
 ```
 
@@ -581,7 +581,7 @@ select * from users where email like '%@gmail.com%' order by age + postsViewCoun
 ```ts
 const users = await prisma.users({
   where: { email_contains: '@gmail.com' },
-  raw: { orderBy: 'age + postsViewCount DESC' },
+  raw: { orderBy: 'age + postsViewCount DESC' }
 })
 ```
 
@@ -903,8 +903,8 @@ const dynamicResult1: DynamicResult1 = await prisma.users.findOne({
   select: {
     posts: { select: { comments: true } },
     friends: true,
-    best_friend: true,
-  },
+    best_friend: true
+  }
 })
 ```
 
@@ -1043,7 +1043,7 @@ Variables
 type DynamicResult2 = (User & { aggregate: { age: { avg: number } } })[]
 
 const dynamicResult2: DynamicResult2 = await prisma.users({
-  select: { aggregate: { age: { avg: true } } },
+  select: { aggregate: { age: { avg: true } } }
 })
 
 type DynamicResult3 = User & {
@@ -1052,7 +1052,7 @@ type DynamicResult3 = User & {
 
 const dynamicResult3: DynamicResult3 = await prisma.users.findOne({
   where: 'bobs-id',
-  select: { posts: { select: { aggregate: { count: true } } } },
+  select: { posts: { select: { aggregate: { count: true } } } }
 })
 ```
 
@@ -1088,6 +1088,12 @@ err := users.SelectMany(db, &u2)
 err := users.SelectMany(db, &u2, users.Where().NameStartsWith("p"))
 ```
 
+##### Underlying graphql query:
+
+```
+# todo
+```
+
 #### GroupBy with Select
 
 ##### Typescript API
@@ -1112,16 +1118,16 @@ const groupByResult: DynamicResult4 = await prisma.users.groupBy({
   orderBy: { lastName: 'ASC' },
   select: {
     records: { first: 100 },
-    aggregate: { age: { avg: true } },
-  },
+    aggregate: { age: { avg: true } }
+  }
 })
 
 const groupByResult2: DynamicResult5 = await prisma.users.groupBy({
   raw: { key: 'firstName || lastName', having: 'AVG(age) > 50' },
   select: {
     records: { $first: 100 },
-    aggregate: { age: { avg: true } },
-  },
+    aggregate: { age: { avg: true } }
+  }
 })
 ```
 
@@ -1156,6 +1162,12 @@ err := users.Select(db, &user,
   users.Group().Raw(fmt.Sprintf("%s || %s", users.Field.FirstName, users.Field.LastName)),
   users.Having().Raw(fmt.Sprintf("AVG(%s) > 50", users.Field.Age)),
 )
+```
+
+##### Underlying graphql query:
+
+```
+# todo
 ```
 
 ## What is `db` and why pass it in each time?
