@@ -40,6 +40,41 @@ The layout of this detailed design is:
 - underlying graphql query
 - additional notes _(if needed)_
 
+The example code below assumes the following datamodel:
+
+```groovy
+model Post {
+  id: ID
+  title: String
+  body: String
+  comments: [Comment]
+  author: User
+}
+
+model Comment {
+  id: ID
+  text: String
+  post: Post
+  author: User
+}
+
+model User {
+  id: ID
+  firstName: String
+  lastName: String
+  email: String
+  posts: [Post]
+  comments: [Comment]
+  friends: [User]
+  profile: Profile
+}
+
+embed Profile {
+  imageUrl: String
+  imageSize: String
+}
+```
+
 ### Find One
 
 #### Find By Primary Key
@@ -61,7 +96,29 @@ bob, err := users.FindByID(db, "bobs-id")
 ##### Underlying graphql query:
 
 ```gql
-# todo
+query($where: UserWhereInput) {
+  user(where: $where) {
+    id
+    firstName
+    lastName
+    email
+    profile {
+      # Profile is an embedded type and therefore will also be fetched by default
+      imageUrl
+      imageSize
+    }
+  }
+}
+```
+
+Variables
+
+```json
+{
+  "where": {
+    "id": "bobs-id"
+  }
+}
 ```
 
 ##### Additional Notes:
@@ -76,7 +133,7 @@ Find a single resource with a `unique(email)` constraint.
 
 ```ts
 const alice: User = await prisma.users.findOne({
-  where: { email: 'alice@prisma.io' }
+  where: { email: 'alice@prisma.io' },
 })
 ```
 
@@ -89,7 +146,29 @@ alice, err := users.FindByEmail(db, "alice@prisma.io")
 ##### Underlying graphql query:
 
 ```gql
-# todo
+query($where: UserWhereInput) {
+  user(where: $where) {
+    id
+    firstName
+    lastName
+    email
+    profile {
+      # Profile is an embedded type and therefore will also be fetched by default
+      imageUrl
+      imageSize
+    }
+  }
+}
+```
+
+Variables
+
+```json
+{
+  "where": {
+    "email": "alice@prisma.io"
+  }
+}
 ```
 
 ##### Additional Notes:
@@ -104,7 +183,7 @@ Find a single resource with a `unique(first_name, last_name)` constraint.
 
 ```ts
 const john: User = await prisma.users.findOne({
-  name: { firstName: 'John', lastName: 'Doe' }
+  name: { firstName: 'John', lastName: 'Doe' },
 })
 ```
 
@@ -117,7 +196,30 @@ john, err := users.FindByFirstNameAndLastName(db, "John", "Doe")
 ##### Underlying graphql query:
 
 ```gql
-# todo
+query($where: UserWhereInput) {
+  user(where: $where) {
+    id
+    firstName
+    lastName
+    email
+    profile {
+      # Profile is an embedded type and therefore will also be fetched by default
+      imageUrl
+      imageSize
+    }
+  }
+}
+```
+
+Variables
+
+```json
+{
+  "where": {
+    "firstName": "John",
+    "lastName": "Doe"
+  }
+}
 ```
 
 ##### Additional Notes:
@@ -132,7 +234,7 @@ Find a single resource by non-unique fields.
 
 ```ts
 const john: User = await prisma.users.findOne({
-  name: { firstName: 'John', lastName: 'Doe' }
+  name: { firstName: 'John', lastName: 'Doe' },
 })
 ```
 
@@ -145,7 +247,30 @@ john, err := users.Find(db, users.Where().FirstName("John").LastName("Doe"))
 ##### Underlying graphql query:
 
 ```gql
-# todo
+query($where: UserWhereInput) {
+  users(where: $where) {
+    id
+    firstName
+    lastName
+    email
+    profile {
+      # Profile is an embedded type and therefore will also be fetched by default
+      imageUrl
+      imageSize
+    }
+  }
+}
+```
+
+Variables
+
+```json
+{
+  "where": {
+    "firstName": "John",
+    "lastName": "Doe"
+  }
+}
 ```
 
 ##### Additional Notes:
@@ -177,7 +302,30 @@ allUsers, err := users.FindMany(db, users.Where().FirstName("John").LastName("Do
 ##### Underlying graphql query:
 
 ```gql
-# todo
+query($where: UserWhereInput) {
+  users(where: $where) {
+    id
+    firstName
+    lastName
+    email
+    profile {
+      # Profile is an embedded type and therefore will also be fetched by default
+      imageUrl
+      imageSize
+    }
+  }
+}
+```
+
+Variables
+
+```json
+{
+  "where": {
+    "firstName": "John",
+    "lastName": "Doe"
+  }
+}
 ```
 
 ##### Additional Notes:
@@ -203,7 +351,27 @@ allUsers, err := users.FindMany(db, users.First(100))
 ##### Underlying graphql query:
 
 ```gql
-# todo
+query($first: Int) {
+  users(first: $first) {
+    id
+    firstName
+    lastName
+    email
+    profile {
+      # Profile is an embedded type and therefore will also be fetched by default
+      imageUrl
+      imageSize
+    }
+  }
+}
+```
+
+Variables
+
+```json
+{
+  "first": 100
+}
 ```
 
 ##### Additional Notes:
@@ -219,7 +387,7 @@ Find an ordered list of items matching the condition.
 ```ts
 const allUsers = await prisma.users({
   where: { firstName: 'John', lastName: 'Doe' },
-  orderBy: { email: 'ASC' }
+  orderBy: { email: 'ASC' },
 })
 ```
 
@@ -235,7 +403,31 @@ allUsers, err := users.FindMany(db,
 ##### Underlying graphql query:
 
 ```gql
-# todo
+query($where: UserWhereInput, $orderBy: UserOrderByInput) {
+  users(where: $where, orderBy: $orderBy) {
+    id
+    firstName
+    lastName
+    email
+    profile {
+      # Profile is an embedded type and therefore will also be fetched by default
+      imageUrl
+      imageSize
+    }
+  }
+}
+```
+
+Variables
+
+```json
+{
+  "where": {
+    "firstName": "John",
+    "lastName": "Doe"
+  },
+  "orderBy": "email_DESC"
+}
 ```
 
 ##### Additional Notes:
@@ -251,7 +443,7 @@ Find an ordered list of items matching the condition: `order by email ASC name D
 ```ts
 const allUsers = await prisma.users({
   where: { firstName: 'John', lastName: 'Doe' },
-  orderBy: [{ email: 'ASC' }, { name: 'DESC' }]
+  orderBy: [{ email: 'ASC' }, { name: 'DESC' }],
 })
 ```
 
@@ -267,7 +459,31 @@ allUsers, err := users.FindMany(db,
 ##### Underlying graphql query:
 
 ```gql
-# todo
+query($where: UserWhereInput, $orderBy: UserOrderByInput) {
+  users(where: $where, orderBy: $orderBy) {
+    id
+    firstName
+    lastName
+    email
+    profile {
+      # Profile is an embedded type and therefore will also be fetched by default
+      imageUrl
+      imageSize
+    }
+  }
+}
+```
+
+Variables
+
+```json
+{
+  "where": {
+    "firstName": "John",
+    "lastName": "Doe"
+  },
+  "orderBy": "name_ASC email_DESC" // this is not yet possible with Prisma. You can only order by one field at a time
+}
 ```
 
 ##### Additional Notes:
@@ -282,7 +498,7 @@ Find an ordered list of items matching the condition.
 
 ```ts
 const usersByProfile = await prisma.users({
-  orderBy: { profile: { imageSize: 'ASC' } }
+  orderBy: { profile: { imageSize: 'ASC' } },
 })
 ```
 
@@ -293,6 +509,8 @@ const usersByProfile = await prisma.users({
 ```
 
 ##### Underlying graphql query:
+
+This is not yet possible with Prisma
 
 ```gql
 # todo
@@ -315,13 +533,35 @@ const users = await prisma.users({ where: { email_contains: '@gmail.com' } })
 ##### Proposed Go API:
 
 ```go
-usrs, err := users.Find(db, users.Where().EmailContains("@gmail.com"))
+users, err := users.Find(db, users.Where().EmailContains("@gmail.com"))
 ```
 
 ##### Underlying graphql query:
 
 ```gql
-# todo
+query($where: UserWhereInput) {
+  users(where: $where) {
+    id
+    firstName
+    lastName
+    email
+    profile {
+      # Profile is an embedded type and therefore will also be fetched by default
+      imageUrl
+      imageSize
+    }
+  }
+}
+```
+
+Variables
+
+```json
+{
+  "where": {
+    "email_contains": "@gmail.com"
+  }
+}
 ```
 
 ##### Additional Notes:
@@ -341,7 +581,7 @@ select * from users where email like '%@gmail.com%' order by age + postsViewCoun
 ```ts
 const users = await prisma.users({
   where: { email_contains: '@gmail.com' },
-  raw: { orderBy: 'age + postsViewCount DESC' }
+  raw: { orderBy: 'age + postsViewCount DESC' },
 })
 ```
 
@@ -359,10 +599,63 @@ results, err := db.Query(fmt.Sprintf(
 ))
 ```
 
-##### Underlying graphql query:
+##### Underlying graphql query for JS Client:
 
 ```gql
-# todo
+query($where: UserWhereInput, $raw: UserRawInput) {
+  # this is not yet possible with Prisma
+  users(where: $where, raw: $raw) {
+    id
+    firstName
+    lastName
+    email
+    profile {
+      # Profile is an embedded type and therefore will also be fetched by default
+      imageUrl
+      imageSize
+    }
+  }
+}
+```
+
+Variables
+
+```json
+{
+  "where": {
+    "email_contains": "@gmail.com"
+  },
+  "raw": {
+    "orderBy": "age + postsViewCount DESC"
+  }
+}
+```
+
+##### Underlying graphql query for Go Client:
+
+```gql
+query($raw: UserRawInput) {
+  # this is not yet possible with Prisma
+  users(raw: $raw) {
+    id
+    firstName
+    lastName
+    email
+    profile {
+      # Profile is an embedded type and therefore will also be fetched by default
+      imageUrl
+      imageSize
+    }
+  }
+}
+```
+
+Variables
+
+```json
+{
+  "raw": "select * from %s where %s like '%@gmail.com%' order by %s + %s desc"
+}
 ```
 
 ##### Additional Notes:
@@ -396,11 +689,92 @@ bobsPosts, err := users.FromID("bobs-id").Posts.FindMany(db, posts.First(50))
 bobsPosts, err := users.FromID("bobs-id").FindManyPosts(db, posts.First(50))
 ```
 
-##### Underlying graphql query:
+##### Underlying graphql query as of now:
 
 ```gql
-# todo
+query($where: UserWhereInput, $first: Int) {
+  user(where: $where) {
+    id
+    firstName
+    lastName
+    email
+    profile {
+      # Profile is an embedded type and therefore will also be fetched by default
+      imageUrl
+      imageSize
+    }
+    posts(first: $first) {
+      id
+      title
+      body
+    }
+  }
+}
 ```
+
+Variables
+
+```json
+{
+  "where": {
+    "id": "bobs-id"
+  },
+  "first": 50
+}
+```
+
+##### Optimized underlying graphql query
+
+```gql
+query($where: UserWhereInput, $first: Int) {
+  user(where: $where) {
+    posts(where: $where, first: $first) {
+      id
+      title
+      body
+    }
+  }
+}
+```
+
+Variables
+
+```json
+{
+  "where": {
+    "id": "bobs-id"
+  },
+  "first": 50
+}
+```
+
+##### Advanced optimized underlying graphql query
+
+```gql
+query($where: PostWhereInput, $first: Int) {
+  posts(where: $where, first: $first) {
+    id
+    title
+    body
+    comments
+  }
+}
+```
+
+Variables
+
+```json
+{
+  "where": {
+    "author": {
+      "id": "bobs-id"
+    }
+  },
+  "first": 50
+}
+```
+
+Here we would need to understand back relations.
 
 ##### Fluent API (Chained)
 
@@ -409,7 +783,7 @@ bobsPosts, err := users.FromID("bobs-id").FindManyPosts(db, posts.First(50))
 ```ts
 const bobsLastPostComments: Comment[] = await prisma.users
   .findOne('bobs-id')
-  .post({ last: 1 })
+  .posts({ last: 1 })
   .comments()
 ```
 
@@ -425,10 +799,68 @@ bobsLastPostComments, err := users.FromID('bobs-id').FromPost(posts.Last(1)).Com
 bobsLastPostComments, err := users.FromID('bobs-id').FromPost(posts.Last(1)).FindManyComments(db)
 ```
 
-##### Underlying graphql query:
+##### Underlying graphql query as of now:
 
 ```gql
-# todo
+query($where: UserWhereInput, $last: Int) {
+  users(where: $where) {
+    id
+    firstName
+    lastName
+    email
+    profile {
+      # Profile is an embedded type and therefore will also be fetched by default
+      imageUrl
+      imageSize
+    }
+    posts(last: $last) {
+      id
+      title
+      body
+      comments {
+        id
+        text
+      }
+    }
+  }
+}
+```
+
+Variables
+
+```json
+{
+  "where": {
+    "id": "bobs-id"
+  },
+  "last": 1
+}
+```
+
+#### Optimized graphql query:
+
+```gql
+query($where: UserWhereInput, $last: Int) {
+  users(where: $where) {
+    posts(last: $last) {
+      comments {
+        id
+        text
+      }
+    }
+  }
+}
+```
+
+Variables
+
+```json
+{
+  "where": {
+    "id": "bobs-id"
+  },
+  "last": 1
+}
 ```
 
 ##### Additional Notes:
@@ -471,8 +903,8 @@ const dynamicResult1: DynamicResult1 = await prisma.users.findOne({
   select: {
     posts: { select: { comments: true } },
     friends: true,
-    best_friend: true
-  }
+    best_friend: true,
+  },
 })
 ```
 
@@ -503,20 +935,32 @@ err := users.SelectByID(db, "bobs-id", &user)
 ##### Underlying graphql query:
 
 ```graphql
-query user(id: $id) {
-  id
-  name
-  posts {
-    id
-    title
-    comments {
-      id
-      comment
-    }
-  }
-  friends {
+query($where: UserWhereInput) {
+  user(where: $where) {
     id
     name
+    posts {
+      id
+      title
+      comments {
+        id
+        comment
+      }
+    }
+    friends {
+      id
+      name
+    }
+  }
+}
+```
+
+Variables
+
+```json
+{
+  "where": {
+    "id": "bobs-id"
   }
 }
 ```
@@ -559,8 +1003,36 @@ for dec.More() {
 
 ##### Underlying graphql query:
 
-```graphql
-# todo
+The first API using `findOne.posts.$withPageInfo` is not yet possible with Prisma,
+as you would need to use the `postsConnection` field on User, which only exists as a toplevel query right now.
+
+```gql
+query($first: Int, $after: String) {
+  postsConnection(first: $first, after: $after) {
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    edges {
+      node {
+        id
+        title
+        body
+      }
+    }
+  }
+}
+```
+
+Variables
+
+```json
+{
+  "first": 100,
+  "after": null
+}
 ```
 
 #### Aggregations
@@ -571,7 +1043,7 @@ for dec.More() {
 type DynamicResult2 = (User & { aggregate: { age: { avg: number } } })[]
 
 const dynamicResult2: DynamicResult2 = await prisma.users({
-  select: { aggregate: { age: { avg: true } } }
+  select: { aggregate: { age: { avg: true } } },
 })
 
 type DynamicResult3 = User & {
@@ -580,7 +1052,7 @@ type DynamicResult3 = User & {
 
 const dynamicResult3: DynamicResult3 = await prisma.users.findOne({
   where: 'bobs-id',
-  select: { posts: { select: { aggregate: { count: true } } } }
+  select: { posts: { select: { aggregate: { count: true } } } },
 })
 ```
 
@@ -640,16 +1112,16 @@ const groupByResult: DynamicResult4 = await prisma.users.groupBy({
   orderBy: { lastName: 'ASC' },
   select: {
     records: { first: 100 },
-    aggregate: { age: { avg: true } }
-  }
+    aggregate: { age: { avg: true } },
+  },
 })
 
 const groupByResult2: DynamicResult5 = await prisma.users.groupBy({
   raw: { key: 'firstName || lastName', having: 'AVG(age) > 50' },
   select: {
     records: { $first: 100 },
-    aggregate: { age: { avg: true } }
-  }
+    aggregate: { age: { avg: true } },
+  },
 })
 ```
 
