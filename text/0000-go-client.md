@@ -1128,8 +1128,34 @@ const groupByResult2: DynamicResult5 = await prisma.users.groupBy({
 ##### Proposed Go API:
 
 ```go
+var user struct {
+  ID string
+  Name string
+  Posts []struct {
+    ID string
+    Title string
+    Aggregate struct {
+      Count int
+    }
+  }
+}
 
-err :=
+err := users.Select(db, &user,
+  users.Where().IsActive(true),
+  users.First(100),
+  users.Order().LastName("ASC"),
+  users.Group().LastName(),
+  users.Having().AgeGt(10),
+)
+
+
+err := users.Select(db, &user,
+  users.Where().IsActive(true),
+  users.First(100),
+  users.Order().LastName("ASC"),
+  users.Group().Raw(fmt.Sprintf("%s || %s", users.Field.FirstName, users.Field.LastName)),
+  users.Having().Raw(fmt.Sprintf("AVG(%s) > 50", users.Field.Age)),
+)
 ```
 
 ## What is `db` and why pass it in each time?
