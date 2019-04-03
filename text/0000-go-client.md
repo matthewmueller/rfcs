@@ -75,27 +75,25 @@ embed Profile {
 }
 ```
 
-### Find One
-
-#### Find By Primary Key
+### Find By Primary Key
 
 Find a single resource by its `primary key`.
 
-##### Current Typescript API:
+#### Current Typescript API:
 
 ```ts
 const bob: User = await prisma.users.findOne('bobs-id')
 ```
 
-##### Proposed Go API:
+#### Go
 
 ```go
 bob, err := users.FindByID(db, "bobs-id")
 ```
 
-##### Underlying graphql query:
+#### GraphQL
 
-```gql
+```graphql
 query($where: UserWhereInput) {
   user(where: $where) {
     id
@@ -121,15 +119,15 @@ Variables
 }
 ```
 
-##### Additional Notes:
+#### Additional Notes:
 
 - todo
 
-#### Find By Unique Constraint
+### Find By Unique Constraint
 
 Find a single resource with a `unique(email)` constraint.
 
-##### Current Typescript API:
+#### Current Typescript API:
 
 ```ts
 const alice: User = await prisma.users.findOne({
@@ -137,15 +135,15 @@ const alice: User = await prisma.users.findOne({
 })
 ```
 
-##### Proposed Go API:
+#### Go
 
 ```go
 alice, err := users.FindByEmail(db, "alice@prisma.io")
 ```
 
-##### Underlying graphql query:
+#### GraphQL
 
-```gql
+```graphql
 query($where: UserWhereInput) {
   user(where: $where) {
     id
@@ -171,15 +169,15 @@ Variables
 }
 ```
 
-##### Additional Notes:
+#### Additional Notes:
 
 - todo
 
-#### Find By a Composite Unique Constraint
+### Find By a Composite Unique Constraint
 
 Find a single resource with a `unique(first_name, last_name)` constraint.
 
-##### Current Typescript API:
+#### Current Typescript API:
 
 ```ts
 const john: User = await prisma.users.findOne({
@@ -187,15 +185,15 @@ const john: User = await prisma.users.findOne({
 })
 ```
 
-##### Proposed Go API:
+#### Go
 
 ```go
 john, err := users.FindByFirstNameAndLastName(db, "John", "Doe")
 ```
 
-##### Underlying graphql query:
+#### GraphQL
 
-```gql
+```graphql
 query($where: UserWhereInput) {
   user(where: $where) {
     id
@@ -222,15 +220,15 @@ Variables
 }
 ```
 
-##### Additional Notes:
+#### Additional Notes:
 
 - todo
 
-#### Find By non-unique conditions
+### Find By non-unique conditions
 
 Find a single resource by non-unique fields.
 
-##### Current Typescript API:
+#### Current Typescript API:
 
 ```ts
 const john: User = await prisma.users.findOne({
@@ -238,15 +236,15 @@ const john: User = await prisma.users.findOne({
 })
 ```
 
-##### Proposed Go API:
+#### Go
 
 ```go
 john, err := users.Find(db, users.Where().FirstName("John").LastName("Doe"))
 ```
 
-##### Underlying graphql query:
+#### GraphQL
 
-```gql
+```graphql
 query($where: UserWhereInput) {
   users(where: $where) {
     id
@@ -273,17 +271,15 @@ Variables
 }
 ```
 
-##### Additional Notes:
+#### Additional Notes:
 
 - todo
 
-### Find Many
-
-#### Find with a condition
+### Find with a condition
 
 Find the all items that match a condition.
 
-##### Current Typescript API:
+#### Current Typescript API:
 
 ```ts
 const allUsers: User[] = await prisma.users.findAll({ firstName: 'John', lastName: 'Doe' })
@@ -291,7 +287,7 @@ const allUsers: User[] = await prisma.users.findAll({ firstName: 'John', lastNam
 const allUsersShortcut: User[] = await prisma.users({ firstName: 'John', lastName: 'Doe' })
 ```
 
-##### Proposed Go API:
+#### Go
 
 ```go
 allUsers, err := users.FindMany(db, users.Where().FirstName("John").LastName("Doe"))
@@ -299,9 +295,9 @@ allUsers, err := users.FindMany(db, users.Where().FirstName("John").LastName("Do
 // no equivalent. users.Users(...) does not exist to avoid stutter
 ```
 
-##### Underlying graphql query:
+#### GraphQL
 
-```gql
+```graphql
 query($where: UserWhereInput) {
   users(where: $where) {
     id
@@ -328,29 +324,29 @@ Variables
 }
 ```
 
-##### Additional Notes:
+#### Additional Notes:
 
 - todo
 
-#### Find with First limit
+### Find with First limit
 
 Find the first N items of a resource.
 
-##### Current Typescript API:
+#### Current Typescript API:
 
 ```ts
 const allUsers: User[] = await prisma.users.findAll({ first: 100 })
 ```
 
-##### Proposed Go API:
+#### Go
 
 ```go
 allUsers, err := users.FindMany(db, users.First(100))
 ```
 
-##### Underlying graphql query:
+#### GraphQL
 
-```gql
+```graphql
 query($first: Int) {
   users(first: $first) {
     id
@@ -374,15 +370,15 @@ Variables
 }
 ```
 
-##### Additional Notes:
+#### Additional Notes:
 
 - todo
 
-#### Find all with Order
+### Find all with Order
 
 Find an ordered list of items matching the condition.
 
-##### Current Typescript API:
+#### Current Typescript API:
 
 ```ts
 const allUsers = await prisma.users({
@@ -391,7 +387,7 @@ const allUsers = await prisma.users({
 })
 ```
 
-##### Proposed Go API:
+#### Go
 
 ```go
 allUsers, err := users.FindMany(db,
@@ -400,9 +396,9 @@ allUsers, err := users.FindMany(db,
 )
 ```
 
-##### Underlying graphql query:
+#### GraphQL
 
-```gql
+```graphql
 query($where: UserWhereInput, $orderBy: UserOrderByInput) {
   users(where: $where, orderBy: $orderBy) {
     id
@@ -430,15 +426,15 @@ Variables
 }
 ```
 
-##### Additional Notes:
+#### Additional Notes:
 
 - May also want to define constants here, e.g. `prisma.DESC` & `prisma.ASC`.
 
-#### Find all with Composite Order
+### Find all with Composite Order
 
 Find an ordered list of items matching the condition: `order by email ASC name DESC`
 
-##### Current Typescript API:
+#### Current Typescript API:
 
 ```ts
 const allUsers = await prisma.users({
@@ -447,7 +443,7 @@ const allUsers = await prisma.users({
 })
 ```
 
-##### Proposed Go API:
+#### Go
 
 ```go
 allUsers, err := users.FindMany(db,
@@ -456,9 +452,9 @@ allUsers, err := users.FindMany(db,
 )
 ```
 
-##### Underlying graphql query:
+#### GraphQL
 
-```gql
+```graphql
 query($where: UserWhereInput, $orderBy: UserOrderByInput) {
   users(where: $where, orderBy: $orderBy) {
     id
@@ -482,19 +478,20 @@ Variables
     "firstName": "John",
     "lastName": "Doe"
   },
-  "orderBy": "name_ASC email_DESC" // this is not yet possible with Prisma. You can only order by one field at a time
+  // this is not yet possible with Prisma. You can only order by one field at a time
+  "orderBy": "name_ASC email_DESC"
 }
 ```
 
-##### Additional Notes:
+#### Additional Notes:
 
 - todo
 
-#### Find all with Nested Order
+### Find all with Nested Order
 
 Find an ordered list of items matching the condition.
 
-##### Current Typescript API:
+#### Current Typescript API:
 
 ```ts
 const usersByProfile = await prisma.users({
@@ -502,43 +499,43 @@ const usersByProfile = await prisma.users({
 })
 ```
 
-##### Proposed Go API:
+#### Go
 
 ```go
 // todo
 ```
 
-##### Underlying graphql query:
+#### GraphQL
 
 This is not yet possible with Prisma
 
-```gql
+```graphql
 # todo
 ```
 
-##### Additional Notes:
+#### Additional Notes:
 
 - todo
 
-#### Find all where contains
+### Find all where contains
 
 Find all items where resource contains submatch: `where email like %@gmail.com%`.
 
-##### Current Typescript API:
+#### Current Typescript API:
 
 ```ts
 const users = await prisma.users({ where: { email_contains: '@gmail.com' } })
 ```
 
-##### Proposed Go API:
+#### Go
 
 ```go
 users, err := users.Find(db, users.Where().EmailContains("@gmail.com"))
 ```
 
-##### Underlying graphql query:
+#### GraphQL
 
-```gql
+```graphql
 query($where: UserWhereInput) {
   users(where: $where) {
     id
@@ -564,11 +561,11 @@ Variables
 }
 ```
 
-##### Additional Notes:
+#### Additional Notes:
 
 - todo
 
-#### Partially Typed Raw SQL
+### Partially Typed Raw SQL
 
 Escape hatch to handle cases where the generated API isn't expressive enough.
 
@@ -576,7 +573,7 @@ Escape hatch to handle cases where the generated API isn't expressive enough.
 select * from users where email like '%@gmail.com%' order by age + postsViewCount desc
 ```
 
-##### Current Typescript API:
+#### Current Typescript API:
 
 ```ts
 const users = await prisma.users({
@@ -585,7 +582,7 @@ const users = await prisma.users({
 })
 ```
 
-##### Proposed Go API:
+#### Go
 
 Use the database client directly, with type-safe constants generated by Prisma.
 
@@ -599,9 +596,9 @@ results, err := db.Query(fmt.Sprintf(
 ))
 ```
 
-##### Underlying graphql query for JS Client:
+#### Underlying graphql query for JS Client:
 
-```gql
+```graphql
 query($where: UserWhereInput, $raw: UserRawInput) {
   # this is not yet possible with Prisma
   users(where: $where, raw: $raw) {
@@ -631,9 +628,9 @@ Variables
 }
 ```
 
-##### Underlying graphql query for Go Client:
+#### Underlying graphql query for Go Client:
 
-```gql
+```graphql
 query($raw: UserRawInput) {
   # this is not yet possible with Prisma
   users(raw: $raw) {
@@ -658,23 +655,23 @@ Variables
 }
 ```
 
-##### Additional Notes:
+#### Additional Notes:
 
 - todo
 
-##### Fluent API
+#### Fluent API
 
 ```sql
 select * from posts where user_id = 'bobs-id' limit 50
 ```
 
-##### Current Typescript API:
+#### Current Typescript API:
 
 ```ts
 const bobsPosts: Post[] = await prisma.users.findOne('bobs-id').posts({ first: 50 })
 ```
 
-##### Proposed Go API:
+#### Go
 
 Use the database client directly, with type-safe constants generated by Prisma.
 
@@ -689,9 +686,9 @@ bobsPosts, err := users.FromID("bobs-id").Posts.FindMany(db, posts.First(50))
 bobsPosts, err := users.FromID("bobs-id").FindManyPosts(db, posts.First(50))
 ```
 
-##### Underlying graphql query as of now:
+#### Underlying graphql query as of now:
 
-```gql
+```graphql
 query($where: UserWhereInput, $first: Int) {
   user(where: $where) {
     id
@@ -723,9 +720,9 @@ Variables
 }
 ```
 
-##### Optimized underlying graphql query
+#### Optimized underlying graphql query
 
-```gql
+```graphql
 query($where: UserWhereInput, $first: Int) {
   user(where: $where) {
     posts(where: $where, first: $first) {
@@ -748,9 +745,9 @@ Variables
 }
 ```
 
-##### Advanced optimized underlying graphql query
+#### Advanced optimized underlying graphql query
 
-```gql
+```graphql
 query($where: PostWhereInput, $first: Int) {
   posts(where: $where, first: $first) {
     id
@@ -776,9 +773,9 @@ Variables
 
 Here we would need to understand back relations.
 
-##### Fluent API (Chained)
+#### Fluent API (Chained)
 
-##### Current Typescript API:
+#### Current Typescript API:
 
 ```ts
 const bobsLastPostComments: Comment[] = await prisma.users
@@ -787,7 +784,7 @@ const bobsLastPostComments: Comment[] = await prisma.users
   .comments()
 ```
 
-##### Proposed Go API:
+#### Go
 
 ```go
 // backwards
@@ -799,9 +796,9 @@ bobsLastPostComments, err := users.FromID('bobs-id').FromPost(posts.Last(1)).Com
 bobsLastPostComments, err := users.FromID('bobs-id').FromPost(posts.Last(1)).FindManyComments(db)
 ```
 
-##### Underlying graphql query as of now:
+#### Underlying graphql query as of now:
 
-```gql
+```graphql
 query($where: UserWhereInput, $last: Int) {
   users(where: $where) {
     id
@@ -837,9 +834,9 @@ Variables
 }
 ```
 
-#### Optimized graphql query:
+### Optimized graphql query:
 
-```gql
+```graphql
 query($where: UserWhereInput, $last: Int) {
   users(where: $where) {
     posts(last: $last) {
@@ -863,11 +860,11 @@ Variables
 }
 ```
 
-##### Additional Notes:
+#### Additional Notes:
 
 - We may be able to ditch the 2nd `FromX`, e.g. `FromPost()`, though it may make things more clear regardless of if it's possible to remove.
 
-#### Select API
+### Select API
 
 ```graphql
 type User {
@@ -888,7 +885,7 @@ type Comment {
 }
 ```
 
-##### Current Typescript API:
+#### Current Typescript API:
 
 ```ts
 type DynamicResult1 = (User & {
@@ -908,7 +905,7 @@ const dynamicResult1: DynamicResult1 = await prisma.users.findOne({
 })
 ```
 
-##### Proposed Go API:
+#### Go
 
 ```go
 var user struct {
@@ -932,7 +929,7 @@ var user struct {
 err := users.SelectByID(db, "bobs-id", &user)
 ```
 
-##### Underlying graphql query:
+#### GraphQL
 
 ```graphql
 query($where: UserWhereInput) {
@@ -965,9 +962,9 @@ Variables
 }
 ```
 
-#### Page Info / Streaming Iterator
+### Page Info / Streaming Iterator
 
-##### Typescript API
+#### Typescript API
 
 ```ts
 // PageInfo
@@ -982,7 +979,7 @@ for await (const post of prisma.posts().$stream()) {
 }
 ```
 
-##### Proposed Go API:
+#### Go
 
 ```go
 // reader with defaults
@@ -1001,12 +998,12 @@ for dec.More() {
 }
 ```
 
-##### Underlying graphql query:
+#### GraphQL
 
 The first API using `findOne.posts.$withPageInfo` is not yet possible with Prisma,
 as you would need to use the `postsConnection` field on User, which only exists as a toplevel query right now.
 
-```gql
+```graphql
 query($first: Int, $after: String) {
   postsConnection(first: $first, after: $after) {
     pageInfo {
@@ -1035,9 +1032,9 @@ Variables
 }
 ```
 
-#### Aggregations
+### Aggregations
 
-##### Typescript API
+#### Typescript API
 
 ```ts
 type DynamicResult2 = (User & { aggregate: { age: { avg: number } } })[]
@@ -1056,7 +1053,7 @@ const dynamicResult3: DynamicResult3 = await prisma.users.findOne({
 })
 ```
 
-##### Proposed Go API:
+#### Go
 
 ```go
 // avg(age)
@@ -1088,15 +1085,15 @@ err := users.SelectMany(db, &u2)
 err := users.SelectMany(db, &u2, users.Where().NameStartsWith("p"))
 ```
 
-##### Underlying graphql query:
+#### GraphQL
 
-```
+```graphql
 # todo
 ```
 
-#### GroupBy with Select
+### GroupBy with Select
 
-##### Typescript API
+#### Typescript API
 
 ```ts
 type DynamicResult3 = User & {
@@ -1131,7 +1128,7 @@ const groupByResult2: DynamicResult5 = await prisma.users.groupBy({
 })
 ```
 
-##### Proposed Go API:
+#### Go
 
 ```go
 var user struct {
@@ -1164,7 +1161,536 @@ err := users.Select(db, &user,
 )
 ```
 
-##### Underlying graphql query:
+#### GraphQL
+
+```graphql
+# not possible yet
+```
+
+### Create
+
+Insert data into the database.
+
+#### Typescript
+
+```ts
+const newUser: User = await prisma.users.create({ firstName: 'Alice' })
+```
+
+#### Go
+
+```go
+newUser, err := users.Create(db, users.New().FirstName("Alice"))
+```
+
+#### GraphQL
+
+```graphql
+# todo
+```
+
+### Update by ID
+
+#### Typescript
+
+```ts
+// Updates
+const updatedUser: User = await prisma.users.update({
+  where: 'bobs-id',
+  data: { firstName: 'Alice' }
+})
+```
+
+#### Go
+
+```go
+updatedUser, err := users.UpdateByID(db, "bobs-id", users.New().FirstName("Alice"))
+```
+
+#### GraphQL
+
+```graphql
+# todo
+```
+
+### Update by Unique Field
+
+#### Typescript
+
+```ts
+const u: User = await prisma.users.update({
+  where: { email: 'bob@prisma.io' },
+  data: { firstName: 'Alice' }
+})
+```
+
+#### Go
+
+```go
+u, err := users.UpdateByEmail(db, "bob@prisma.io", users.New().FirstName("Alice"))
+```
+
+#### GraphQL
+
+```graphql
+# todo
+```
+
+### Update by Composite Unique Fields
+
+#### Typescript
+
+```ts
+// todo
+```
+
+#### Go
+
+```go
+u, err := users.UpdateByFirstNameAndLastName(db, "alice", "baggins",
+  users.New().FirstName("Martha"),
+)
+```
+
+#### GraphQL
+
+```graphql
+# todo
+```
+
+### Update by a Condition
+
+Update by a condition, returning the first user.
+
+> WARNING: your condition is expected to match one user, this could update more if you're not specific enough. This call will return the first updated user
+
+#### Typescript
+
+```ts
+// todo
+```
+
+#### Go
+
+```go
+u, err := users.Update(db, user.New().FirstName("Martha"), user.Where().FirstName("Alice"))
+```
+
+#### GraphQL
+
+```graphql
+# todo
+```
+
+### Update Many by a Condition
+
+Update many rows by a condition, returning all updated users
+
+#### Typescript
+
+```ts
+// todo
+```
+
+#### Go
+
+```go
+uu, err := users.UpdateMany(db,
+  user.New().FirstName("Martha"),
+  user.Where().FirstName("Alice"),
+)
+```
+
+#### GraphQL
+
+```graphql
+## todo
+```
+
+### Upsert By ID
+
+Upsert a resource by its ID. If the ID matches, it's an update, otherwise it's a create
+
+#### Typescript
+
+```ts
+const upsertedUser: User = await prisma.users.upsert({
+  where: 'bobs-id',
+  update: { firstName: 'Alice' },
+  create: { id: '...', firstName: 'Alice' }
+})
+```
+
+#### Go
+
+```go
+upsertedUser, err := users.UpsertByID(db, "bobs-id", users.New().ID("...").FirstName("Alice"))
+```
+
+#### GraphQL
+
+```graphql
+## todo
+```
+
+### Upsert By Unique Constraint
+
+Upsert a resource by its unique constraint. If the unique constraint matches, it's an update, otherwise it's a create
+
+#### Typescript
+
+```ts
+// todo
+```
+
+#### Go
+
+```go
+upsertedUser, err := users.UpsertByEmail(db, "bob@bob.com",
+  users.New().Email("...").FirstName("Alice"),
+)
+```
+
+#### GraphQL
+
+```graphql
+## todo
+```
+
+### Upsert By Composite Unique Constraint
+
+Upsert a resource by its composite unique constraint. If the composite unique constraint matches, it's an update, otherwise it's a create
+
+#### Typescript
+
+```ts
+// todo
+```
+
+#### Go
+
+```go
+upsertedUser, err := users.UpsertByFirstNameAndLastName(db, "Alice", "Bobbins",
+  users.New().FirstName("Mark").LastName("Anthony"),
+)
+```
+
+#### GraphQL
+
+```graphql
+## todo
+```
+
+### Delete by ID
+
+Delete by an ID
+
+#### Typescript
+
+```ts
+// NOTE has Fluent API disabled (incl. nested queries)
+const deletedUser: User = await prisma.users.delete('bobs-id')
+```
+
+#### Go
+
+```go
+deletedUser, err := users.DeleteByID(db, "bobs-id")
+```
+
+#### GraphQL
+
+```graphql
+## todo
+```
+
+### Delete by Unique Constraint
+
+Delete by a unique constraint.
+
+#### Typescript
+
+```ts
+// todo
+```
+
+#### Go
+
+```go
+deletedUser, err := users.DeleteByEmail(db, "bob@bob.com")
+```
+
+#### GraphQL
+
+```graphql
+## todo
+```
+
+### Delete by Composite Unique Constraints
+
+Delete by composite unique constraints
+
+#### Typescript
+
+```ts
+// todo
+```
+
+#### Go
+
+```go
+deletedUser, err := users.DeleteByFirstNameAndLastName(db, "Alice", "Baggins")
+```
+
+#### GraphQL
+
+```graphql
+## todo
+```
+
+### Delete by a condition
+
+Delete by a condition
+
+> WARNING: your condition is expected to match one user, it could delete more if you're not specific enough. This call will return the first user
+
+#### Typescript
+
+```ts
+// todo
+```
+
+#### Go
+
+```go
+// delete by a condition returning the first deleted
+deletedUser, err := users.Delete(db, users.Where().FirstName("alice"))
+```
+
+#### GraphQL
+
+```graphql
+## todo
+```
+
+### Delete Many by a condition
+
+Delete many by conditions returning all deleted users
+
+> Note: this might not be portable, but it sure is nice in Postgres.
+> It'd stink to cater to the lowest common database features.
+
+#### Typescript
+
+```ts
+// todo
+```
+
+#### Go
+
+```go
+deletedUsers, err := users.DeleteMany(db, users.Where().FirstName("alice"))
+```
+
+### Delete count
+
+Get the number of deleted users
+
+#### Typescript
+
+```ts
+const deletedCount: number = await prisma.users.deleteMany()
+```
+
+#### Go
+
+```go
+deletedUsers, err := users.DeleteMany(db, users.Where().FirstName("alice"))
+deletedCount := len(deletedUsers)
+```
+
+#### GraphQL
+
+```graphql
+## todo
+```
+
+### Update OCC
+
+Update if the version matches
+
+#### Typescript
+
+```ts
+const updatedUserOCC: User = await prisma.users.update({
+  where: 'bobs-id',
+  if: { version: 12 },
+  data: { firstName: 'Alice' }
+})
+```
+
+#### Go
+
+```go
+updatedUserOCC, err := users.Update(db,
+  users.New().FirstName("Alice"),
+  users.Where().ID('bobs-id'),
+  users.If().Version(12),
+)
+```
+
+#### GraphQL
+
+```graphql
+## todo
+```
+
+### Upsert OCC
+
+Upsert if the version matches
+
+> TODO: what's this query do? Would it reject both update and create if the version doesn't match?
+
+#### Typescript
+
+```ts
+const upsertedUserOCC: User = await prisma.users.upsert({
+  where: 'bobs-id',
+  if: { version: 12 },
+  update: { firstName: 'Alice' },
+  create: { id: '...', firstName: 'Alice' }
+})
+```
+
+#### Go
+
+```go
+// todo
+```
+
+#### GraphQL
+
+```graphql
+## todo
+```
+
+### Delete OCC
+
+Delete if the version matches
+
+#### Typescript
+
+```ts
+const deletedUserOCC: User = await prisma.users.delete({
+  if: { version: 12 },
+  where: 'bobs-id'
+})
+```
+
+#### Go
+
+```go
+deletedUser, err := users.Delete(db,
+  users.Where().FirstName("alice"),
+  users.If().Version(12),
+)
+```
+
+#### GraphQL
+
+```graphql
+## todo
+```
+
+### Batching
+
+Batch multiple statements into one request.
+
+#### Typescript
+
+```ts
+const m1 = prisma.users.create({ firstName: 'Alice' })
+const m2 = prisma.posts.create({ title: 'Hello world' })
+const [u1, p1]: [User, Post] = await prisma.batch([m1, m2])
+```
+
+#### Go
+
+```go
+b := prisma.Batch()
+b.Users.Create(users.New().FirstName("Alice"))
+b.Posts.Create(posts.New().Title("Hello World"))
+if err := b.Run(db); err != nil {
+  return err
+}
+```
+
+#### GraphQL
+
+```graphql
+## todo
+```
+
+### Batching (with Transaction)
+
+Batch multiple statements into one request as a transaction.
+
+#### Typescript
+
+```ts
+const m1 = prisma.users.create({ firstName: 'Alice' })
+const m2 = prisma.posts.create({ title: 'Hello world' })
+const [u1, p1]: [User, Post] = await prisma.batch([m1, m2], { transaction: true })
+```
+
+#### Go
+
+```go
+b := prisma.Batch()
+b.Users.Create(users.New().FirstName("Alice"))
+b.Posts.Create(posts.New().Title("Hello World"))
+
+tx, err := db.Begin()
+if err != nil {
+  return err
+}
+defer db.Rollback()
+
+if err := b.Run(tx); err != nil {
+  return err
+}
+
+if err := tx.Commit(); err != nil {
+  return err
+}
+```
+
+#### GraphQL
+
+```graphql
+## todo
+```
+
+### Explicit \$exec terminator
+
+#### Typescript
+
+```ts
+// todo: Not clear what the command actually does
+const usersQueryWithTimeout = await prisma.users.$exec({ timeout: 1000 })
+```
+
+#### Go
+
+```go
+// create a context with a timeout
+ctx, cancel := context.WithDeadline(request.Context(), 10*time.Second))
+defer cancel()
+db := &DBContext{db, context}
+u, err := users.Create(db, users.New().FirstName("Alice"))
+```
+
+#### GraphQL
 
 ```
 # todo
