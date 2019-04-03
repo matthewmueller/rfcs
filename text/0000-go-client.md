@@ -79,7 +79,7 @@ embed Profile {
 
 Find a single resource by its `primary key`.
 
-#### Current Typescript API:
+#### Typescript:
 
 ```ts
 const bob: User = await prisma.users.findOne('bobs-id')
@@ -127,7 +127,7 @@ Variables
 
 Find a single resource with a `unique(email)` constraint.
 
-#### Current Typescript API:
+#### Typescript:
 
 ```ts
 const alice: User = await prisma.users.findOne({
@@ -177,7 +177,7 @@ Variables
 
 Find a single resource with a `unique(first_name, last_name)` constraint.
 
-#### Current Typescript API:
+#### Typescript:
 
 ```ts
 const john: User = await prisma.users.findOne({
@@ -224,11 +224,11 @@ Variables
 
 - todo
 
-### Find By non-unique conditions
+### Find by a condition
 
-Find a single resource by non-unique fields.
+Find a single resource by a condition.
 
-#### Current Typescript API:
+#### Typescript:
 
 ```ts
 const john: User = await prisma.users.findOne({
@@ -275,11 +275,11 @@ Variables
 
 - todo
 
-### Find with a condition
+### Find Many with a condition
 
 Find the all items that match a condition.
 
-#### Current Typescript API:
+#### Typescript:
 
 ```ts
 const allUsers: User[] = await prisma.users.findAll({ firstName: 'John', lastName: 'Doe' })
@@ -332,7 +332,7 @@ Variables
 
 Find the first N items of a resource.
 
-#### Current Typescript API:
+#### Typescript:
 
 ```ts
 const allUsers: User[] = await prisma.users.findAll({ first: 100 })
@@ -378,7 +378,7 @@ Variables
 
 Find an ordered list of items matching the condition.
 
-#### Current Typescript API:
+#### Typescript:
 
 ```ts
 const allUsers = await prisma.users({
@@ -434,7 +434,7 @@ Variables
 
 Find an ordered list of items matching the condition: `order by email ASC name DESC`
 
-#### Current Typescript API:
+#### Typescript:
 
 ```ts
 const allUsers = await prisma.users({
@@ -491,7 +491,7 @@ Variables
 
 Find an ordered list of items matching the condition.
 
-#### Current Typescript API:
+#### Typescript:
 
 ```ts
 const usersByProfile = await prisma.users({
@@ -521,7 +521,7 @@ This is not yet possible with Prisma
 
 Find all items where resource contains submatch: `where email like %@gmail.com%`.
 
-#### Current Typescript API:
+#### Typescript:
 
 ```ts
 const users = await prisma.users({ where: { email_contains: '@gmail.com' } })
@@ -573,7 +573,7 @@ Escape hatch to handle cases where the generated API isn't expressive enough.
 select * from users where email like '%@gmail.com%' order by age + postsViewCount desc
 ```
 
-#### Current Typescript API:
+#### Typescript:
 
 ```ts
 const users = await prisma.users({
@@ -665,7 +665,7 @@ Variables
 select * from posts where user_id = 'bobs-id' limit 50
 ```
 
-#### Current Typescript API:
+#### Typescript:
 
 ```ts
 const bobsPosts: Post[] = await prisma.users.findOne('bobs-id').posts({ first: 50 })
@@ -775,7 +775,7 @@ Here we would need to understand back relations.
 
 #### Fluent API (Chained)
 
-#### Current Typescript API:
+#### Typescript:
 
 ```ts
 const bobsLastPostComments: Comment[] = await prisma.users
@@ -885,7 +885,7 @@ type Comment {
 }
 ```
 
-#### Current Typescript API:
+#### Typescript:
 
 ```ts
 type DynamicResult1 = (User & {
