@@ -44,7 +44,7 @@ The example code below assumes the following datamodel:
 
 ```groovy
 model Post {
-  id: ID
+  id: ID! @unique
   title: String
   body: String
   comments: [Comment]
@@ -52,26 +52,27 @@ model Post {
 }
 
 model Comment {
-  id: ID
+  id: ID! @unique
   text: String
   post: Post
   author: User
 }
 
 model User {
-  id: ID
-  firstName: String
-  lastName: String
-  email: String
+  id: ID! @unique
+  first_name: String!
+  last_name: String!
+  email: String! @unique
+  profile: Profile
   posts: [Post]
   comments: [Comment]
   friends: [User]
-  profile: Profile
 }
+@unique(first_name, last_name)
 
 embed Profile {
-  imageUrl: String
-  imageSize: String
+  image_url: String
+  image_size: String
 }
 ```
 
@@ -80,6 +81,14 @@ embed Profile {
 Find a single resource by its `primary key`.
 
 #### Typescript:
+
+Prisma 1:
+
+```ts
+const bob: User = await prisma.user({ id: 'bobs-id' })
+```
+
+Prisma 2:
 
 ```ts
 const bob: User = await prisma.users.findOne('bobs-id')
@@ -97,8 +106,8 @@ bob, err := users.FindByID(db, "bobs-id")
 query($where: UserWhereInput) {
   user(where: $where) {
     id
-    firstName
-    lastName
+    first_name
+    last_name
     email
     profile {
       # Profile is an embedded type and therefore will also be fetched by default
@@ -129,6 +138,16 @@ Find a single resource with a `unique(email)` constraint.
 
 #### Typescript:
 
+Prisma 1:
+
+```ts
+const alice: User = prisma.user({
+  email: 'alice@prisma.io'
+})
+```
+
+Prisma 2:
+
 ```ts
 const alice: User = await prisma.users.findOne({
   where: { email: 'alice@prisma.io' }
@@ -147,8 +166,8 @@ alice, err := users.FindByEmail(db, "alice@prisma.io")
 query($where: UserWhereInput) {
   user(where: $where) {
     id
-    firstName
-    lastName
+    first_name
+    last_name
     email
     profile {
       # Profile is an embedded type and therefore will also be fetched by default
@@ -169,26 +188,35 @@ Variables
 }
 ```
 
-#### Additional Notes:
-
-- todo
-
 ### Find By a Composite Unique Constraint
 
 Find a single resource with a `unique(first_name, last_name)` constraint.
 
 #### Typescript:
 
+Prisma 1:
+
+```ts
+const john = await prisma.users({
+  where: {
+    first_name: 'John',
+    last_name: 'Doe'
+  }
+})
+```
+
+Prisma 2:
+
 ```ts
 const john: User = await prisma.users.findOne({
-  name: { firstName: 'John', lastName: 'Doe' }
+  name: { first_name: 'John', last_name: 'Doe' }
 })
 ```
 
 #### Go
 
 ```go
-john, err := users.FindByFirstNameAndLastName(db, "John", "Doe")
+john, err := users.FindByfirst_nameAndLastName(db, "John", "Doe")
 ```
 
 #### GraphQL
@@ -197,8 +225,8 @@ john, err := users.FindByFirstNameAndLastName(db, "John", "Doe")
 query($where: UserWhereInput) {
   user(where: $where) {
     id
-    firstName
-    lastName
+    first_name
+    last_name
     email
     profile {
       # Profile is an embedded type and therefore will also be fetched by default
@@ -214,15 +242,11 @@ Variables
 ```json
 {
   "where": {
-    "firstName": "John",
-    "lastName": "Doe"
+    "first_name": "John",
+    "last_name": "Doe"
   }
 }
 ```
-
-#### Additional Notes:
-
-- todo
 
 ### Find by a condition
 
@@ -232,7 +256,7 @@ Find a single resource by a condition.
 
 ```ts
 const john: User = await prisma.users.findOne({
-  name: { firstName: 'John', lastName: 'Doe' }
+  name: { first_name: 'John', last_name: 'Doe' }
 })
 ```
 
@@ -248,8 +272,8 @@ john, err := users.Find(db, users.Where().FirstName("John").LastName("Doe"))
 query($where: UserWhereInput) {
   users(where: $where) {
     id
-    firstName
-    lastName
+    first_name
+    last_name
     email
     profile {
       # Profile is an embedded type and therefore will also be fetched by default
@@ -265,8 +289,8 @@ Variables
 ```json
 {
   "where": {
-    "firstName": "John",
-    "lastName": "Doe"
+    "first_name": "John",
+    "last_name": "Doe"
   }
 }
 ```
@@ -282,9 +306,9 @@ Find the all items that match a condition.
 #### Typescript:
 
 ```ts
-const allUsers: User[] = await prisma.users.findAll({ firstName: 'John', lastName: 'Doe' })
+const allUsers: User[] = await prisma.users.findAll({ first_name: 'John', last_name: 'Doe' })
 // or
-const allUsersShortcut: User[] = await prisma.users({ firstName: 'John', lastName: 'Doe' })
+const allUsersShortcut: User[] = await prisma.users({ first_name: 'John', last_name: 'Doe' })
 ```
 
 #### Go
@@ -301,8 +325,8 @@ allUsers, err := users.FindMany(db, users.Where().FirstName("John").LastName("Do
 query($where: UserWhereInput) {
   users(where: $where) {
     id
-    firstName
-    lastName
+    first_name
+    last_name
     email
     profile {
       # Profile is an embedded type and therefore will also be fetched by default
@@ -318,8 +342,8 @@ Variables
 ```json
 {
   "where": {
-    "firstName": "John",
-    "lastName": "Doe"
+    "first_name": "John",
+    "last_name": "Doe"
   }
 }
 ```
@@ -350,8 +374,8 @@ allUsers, err := users.FindMany(db, users.First(100))
 query($first: Int) {
   users(first: $first) {
     id
-    firstName
-    lastName
+    first_name
+    last_name
     email
     profile {
       # Profile is an embedded type and therefore will also be fetched by default
@@ -382,7 +406,7 @@ Find an ordered list of items matching the condition.
 
 ```ts
 const allUsers = await prisma.users({
-  where: { firstName: 'John', lastName: 'Doe' },
+  where: { first_name: 'John', last_name: 'Doe' },
   orderBy: { email: 'ASC' }
 })
 ```
@@ -402,8 +426,8 @@ allUsers, err := users.FindMany(db,
 query($where: UserWhereInput, $orderBy: UserOrderByInput) {
   users(where: $where, orderBy: $orderBy) {
     id
-    firstName
-    lastName
+    first_name
+    last_name
     email
     profile {
       # Profile is an embedded type and therefore will also be fetched by default
@@ -419,8 +443,8 @@ Variables
 ```json
 {
   "where": {
-    "firstName": "John",
-    "lastName": "Doe"
+    "first_name": "John",
+    "last_name": "Doe"
   },
   "orderBy": "email_DESC"
 }
@@ -438,7 +462,7 @@ Find an ordered list of items matching the condition: `order by email ASC name D
 
 ```ts
 const allUsers = await prisma.users({
-  where: { firstName: 'John', lastName: 'Doe' },
+  where: { first_name: 'John', last_name: 'Doe' },
   orderBy: [{ email: 'ASC' }, { name: 'DESC' }]
 })
 ```
@@ -458,8 +482,8 @@ allUsers, err := users.FindMany(db,
 query($where: UserWhereInput, $orderBy: UserOrderByInput) {
   users(where: $where, orderBy: $orderBy) {
     id
-    firstName
-    lastName
+    first_name
+    last_name
     email
     profile {
       # Profile is an embedded type and therefore will also be fetched by default
@@ -475,8 +499,8 @@ Variables
 ```json
 {
   "where": {
-    "firstName": "John",
-    "lastName": "Doe"
+    "first_name": "John",
+    "last_name": "Doe"
   },
   // this is not yet possible with Prisma. You can only order by one field at a time
   "orderBy": "name_ASC email_DESC"
@@ -539,8 +563,8 @@ users, err := users.Find(db, users.Where().EmailContains("@gmail.com"))
 query($where: UserWhereInput) {
   users(where: $where) {
     id
-    firstName
-    lastName
+    first_name
+    last_name
     email
     profile {
       # Profile is an embedded type and therefore will also be fetched by default
@@ -603,8 +627,8 @@ query($where: UserWhereInput, $raw: UserRawInput) {
   # this is not yet possible with Prisma
   users(where: $where, raw: $raw) {
     id
-    firstName
-    lastName
+    first_name
+    last_name
     email
     profile {
       # Profile is an embedded type and therefore will also be fetched by default
@@ -635,8 +659,8 @@ query($raw: UserRawInput) {
   # this is not yet possible with Prisma
   users(raw: $raw) {
     id
-    firstName
-    lastName
+    first_name
+    last_name
     email
     profile {
       # Profile is an embedded type and therefore will also be fetched by default
@@ -692,8 +716,8 @@ bobsPosts, err := users.FromID("bobs-id").FindManyPosts(db, posts.First(50))
 query($where: UserWhereInput, $first: Int) {
   user(where: $where) {
     id
-    firstName
-    lastName
+    first_name
+    last_name
     email
     profile {
       # Profile is an embedded type and therefore will also be fetched by default
@@ -802,8 +826,8 @@ bobsLastPostComments, err := users.FromID('bobs-id').FromPost(posts.Last(1)).Fin
 query($where: UserWhereInput, $last: Int) {
   users(where: $where) {
     id
-    firstName
-    lastName
+    first_name
+    last_name
     email
     profile {
       # Profile is an embedded type and therefore will also be fetched by default
@@ -1102,17 +1126,17 @@ type DynamicResult3 = User & {
 
 // TODO wrong type
 type DynamicResult4 = {
-  lastName: string
+  last_name: string
   records: User[]
   aggregate: { age: { avg: number } }
 }
 
 const groupByResult: DynamicResult4 = await prisma.users.groupBy({
-  key: 'lastName',
+  key: 'last_name',
   having: { age: { avgGt: 10 } },
   where: { isActive: true },
   first: 100,
-  orderBy: { lastName: 'ASC' },
+  orderBy: { last_name: 'ASC' },
   select: {
     records: { first: 100 },
     aggregate: { age: { avg: true } }
@@ -1120,7 +1144,7 @@ const groupByResult: DynamicResult4 = await prisma.users.groupBy({
 })
 
 const groupByResult2: DynamicResult5 = await prisma.users.groupBy({
-  raw: { key: 'firstName || lastName', having: 'AVG(age) > 50' },
+  raw: { key: 'first_name || last_name', having: 'AVG(age) > 50' },
   select: {
     records: { $first: 100 },
     aggregate: { age: { avg: true } }
@@ -1156,7 +1180,7 @@ err := users.Select(db, &user,
   users.Where().IsActive(true),
   users.First(100),
   users.Order().LastName("ASC"),
-  users.Group().Raw(fmt.Sprintf("%s || %s", users.Field.FirstName, users.Field.LastName)),
+  users.Group().Raw(fmt.Sprintf("%s || %s", users.Field.first_name, users.Field.last_name)),
   users.Having().Raw(fmt.Sprintf("AVG(%s) > 50", users.Field.Age)),
 )
 ```
@@ -1174,7 +1198,7 @@ Insert data into the database.
 #### Typescript
 
 ```ts
-const newUser: User = await prisma.users.create({ firstName: 'Alice' })
+const newUser: User = await prisma.users.create({ first_name: 'Alice' })
 ```
 
 #### Go
@@ -1197,14 +1221,14 @@ newUser, err := users.Create(db, users.New().FirstName("Alice"))
 // Updates
 const updatedUser: User = await prisma.users.update({
   where: 'bobs-id',
-  data: { firstName: 'Alice' }
+  data: { first_name: 'Alice' }
 })
 ```
 
 #### Go
 
 ```go
-updatedUser, err := users.UpdateByID(db, "bobs-id", users.New().FirstName("Alice"))
+updatedUser, err := users.UpdateByID(db, "bobs-id", users.New()FfirstName("Alice"))
 ```
 
 #### GraphQL
@@ -1220,14 +1244,14 @@ updatedUser, err := users.UpdateByID(db, "bobs-id", users.New().FirstName("Alice
 ```ts
 const u: User = await prisma.users.update({
   where: { email: 'bob@prisma.io' },
-  data: { firstName: 'Alice' }
+  data: { first_name: 'Alice' }
 })
 ```
 
 #### Go
 
 ```go
-u, err := users.UpdateByEmail(db, "bob@prisma.io", users.New().FirstName("Alice"))
+u, err := users.UpdateByEmail(db, "bob@prisma.io", users.New()FfirstName("Alice"))
 ```
 
 #### GraphQL
@@ -1247,7 +1271,7 @@ u, err := users.UpdateByEmail(db, "bob@prisma.io", users.New().FirstName("Alice"
 #### Go
 
 ```go
-u, err := users.UpdateByFirstNameAndLastName(db, "alice", "baggins",
+u, err := users.UpdateByfirst_nameAndLastName(db, "alice", "baggins",
   users.New().FirstName("Martha"),
 )
 ```
@@ -1316,8 +1340,8 @@ Upsert a resource by its ID. If the ID matches, it's an update, otherwise it's a
 ```ts
 const upsertedUser: User = await prisma.users.upsert({
   where: 'bobs-id',
-  update: { firstName: 'Alice' },
-  create: { id: '...', firstName: 'Alice' }
+  update: { first_name: 'Alice' },
+  create: { id: '...', first_name: 'Alice' }
 })
 ```
 
@@ -1370,7 +1394,7 @@ Upsert a resource by its composite unique constraint. If the composite unique co
 #### Go
 
 ```go
-upsertedUser, err := users.UpsertByFirstNameAndLastName(db, "Alice", "Bobbins",
+upsertedUser, err := users.UpsertByfirst_nameAndLastName(db, "Alice", "Bobbins",
   users.New().FirstName("Mark").LastName("Anthony"),
 )
 ```
@@ -1439,7 +1463,7 @@ Delete by composite unique constraints
 #### Go
 
 ```go
-deletedUser, err := users.DeleteByFirstNameAndLastName(db, "Alice", "Baggins")
+deletedUser, err := users.DeleteByfirst_nameAndLastName(db, "Alice", "Baggins")
 ```
 
 #### GraphQL
@@ -1525,7 +1549,7 @@ Update if the version matches
 const updatedUserOCC: User = await prisma.users.update({
   where: 'bobs-id',
   if: { version: 12 },
-  data: { firstName: 'Alice' }
+  data: { first_name: 'Alice' }
 })
 ```
 
@@ -1557,8 +1581,8 @@ Upsert if the version matches
 const upsertedUserOCC: User = await prisma.users.upsert({
   where: 'bobs-id',
   if: { version: 12 },
-  update: { firstName: 'Alice' },
-  create: { id: '...', firstName: 'Alice' }
+  update: { first_name: 'Alice' },
+  create: { id: '...', first_name: 'Alice' }
 })
 ```
 
@@ -1609,7 +1633,7 @@ Batch multiple statements into one request.
 #### Typescript
 
 ```ts
-const m1 = prisma.users.create({ firstName: 'Alice' })
+const m1 = prisma.users.create({ first_name: 'Alice' })
 const m2 = prisma.posts.create({ title: 'Hello world' })
 const [u1, p1]: [User, Post] = await prisma.batch([m1, m2])
 ```
@@ -1638,7 +1662,7 @@ Batch multiple statements into one request as a transaction.
 #### Typescript
 
 ```ts
-const m1 = prisma.users.create({ firstName: 'Alice' })
+const m1 = prisma.users.create({ first_name: 'Alice' })
 const m2 = prisma.posts.create({ title: 'Hello world' })
 const [u1, p1]: [User, Post] = await prisma.batch([m1, m2], { transaction: true })
 ```
