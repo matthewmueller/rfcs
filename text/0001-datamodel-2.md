@@ -7,7 +7,6 @@ This RFC is a potential answer to an open question posed in the previous RFC:
 > "If we were a little more radical with the syntax, could we create something much better?"
 
 - **Note:** There is a lot missing from this RFPC that is properly speced out in the previous RFC. If we like the direction of this syntax, I can start bringing concepts over or moving concepts to that spec.
-- **Tip:** you should disable syntax highlighting to avoid any color biases. Once we have a parser, we can highlight this code however way we want.
 
 ## Requirements
 
@@ -78,7 +77,7 @@ This example illustrate many aspects of the proposed syntax:
 
 ```groovy
 postgres_url = env("POSTGRES_URL")
-mongo_url = env("MONGO_URL")
+mongo_url    = env("MONGO_URL")
 
 // postgres datasource
 source postgres {
@@ -219,9 +218,9 @@ model CategoriesPosts {
 
 We're essentially a superset of the HCL2, so the configuration of Terraform would apply here:
 
-```
+```groovy
 postgres_url = env("POSTGRES_URL")
-mongo_url = env("MONGO_URL")
+mongo_url    = env("MONGO_URL")
 
 generate javascript {
   target = "es3"
