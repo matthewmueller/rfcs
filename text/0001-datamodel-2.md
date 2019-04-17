@@ -26,10 +26,10 @@ This RFC is a potential answer to an open question posed in the previous RFC:
 
 ## Summary of adjustments from previous DM2 RFC
 
-- Explicit join tables. CLI/VSCode makes suggestions when you don't have them
+- Explicit join tables. CLI/VSCode makes suggestions when you don't have the join table
 - Removed colon between name and type
-- Added block expressions () into the block definition
 - Functions (or attributes) instead of directives, removing @.
+- Moved model directives from the top of the model into the block
 - Lowercase primitives, capitalized higher-level types
 - Removed `ID` as a primitive type
 - Merged prisma.yml configuration into the datamodel (WIP)
