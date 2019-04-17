@@ -93,7 +93,7 @@ source mongo {
 
 // connect to our secondary Mongo DB
 source mongo {
-  alias    = mgo2
+  alias    = "mgo2"
   host     = "localhost"
   port     = 27017
   database = "neato2"
@@ -149,6 +149,7 @@ model Profile {
 
 // named embed (reusable)
 embed Photo {
+  id   mgo2.ObjectID
   url  text
 
   // anonymous embed (optional)
