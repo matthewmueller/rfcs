@@ -530,10 +530,22 @@ some default functionality.
 
 ```groovy
 model User {
-  id        id
-  createdAt created_at
-  updatedAt updated_at
+  id         id
+  createdAt  created_at
+  updatedAt  updated_at
 }
 ```
+
+One possible solution is to introduce a prisma namespace for high-level data types:
+
+```groovy
+model User {
+  id         prisma.ID
+  createdAt  prisma.CreatedAt
+  updatedAt  prisma.UpdatedAt
+}
+```
+
+---
 
 More questions: https://github.com/prisma/rfcs/blob/datamodel/text/0000-datamodel.md#open-questions
