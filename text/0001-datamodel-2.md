@@ -1,26 +1,25 @@
 # Datamodel 2 (Experimental Syntax)
 
-It's much easier to revise than it is to create from scratch. This RFC attempts to improve the syntax laid out in [current RFC on Data Model 2](https://github.com/prisma/rfcs/blob/datamodel/text/0000-datamodel.md#1-1), specs out a few additional features and tries to unify some concepts.
+This RFC attempts to improve the syntax laid out in [current RFC on Data Model 2](https://github.com/prisma/rfcs/blob/datamodel/text/0000-datamodel.md#1-1), specs out a few additional features and tries to unify some concepts.
 
 This RFC is a potential answer to an open question posed in the previous RFC:
 
 > "If we were a little more radical with the syntax, could we create something much better?"
 
-> Tip: you should disable syntax highlighting to avoid any color biases. We can
-> highlight this code however way we want.
+- **Note:** There is a lot missing from this RFPC that is properly speced out in the previous RFC. If we like the direction of this syntax, I can start bringing concepts over or moving concepts to that spec.
+- **Tip:** you should disable syntax highlighting to avoid any color biases. Once we have a parser, we can highlight this code however way we want.
 
-# Goals
+## Requirements
 
 - Break from the existing GraphQL SDL syntax where it makes sense
 - Clearly separate responsibilities into two categories: Core Prisma primitives and Connector specific primitives
-- One configuration file for prisma (WIP)
-- No relationship ambiguities
-- Machine formatted
-- Easily parsable
+- High-level relationships without ambiguities
 
 ## Nice to Have
 
-- Avoid symbol tables (see: [https://golang.org/doc/faq#different_syntax](https://golang.org/doc/faq#different_syntax) )
+- One configuration file for prisma (WIP)
+- Machine formatted
+- Easily parsable ([avoid symbol tables](https://golang.org/doc/faq#different_syntax))
 - Multi-line support and optional single-line via commas
 - Unicode (emoji) support
 
@@ -46,7 +45,7 @@ This RFC is a potential answer to an open question posed in the previous RFC:
 - Added model embedding (fragments in GraphQL)
 - Adjust many-to-many convention `BlogToWriter` to `BlogsWriters`
 
-# Syntax
+## Syntax (WIP)
 
 This following syntax is primarily inspired by [HCL2's blocks and attributes](https://github.com/hashicorp/hcl2/#information-model-and-syntax)
 concepts for the configuration and block formatting.
@@ -72,7 +71,7 @@ FieldDefinition    = Identifier (SelectorExpression|Identifier|Expression) (Expr
 Body               = (Attribute | Block | OneLineBlock | Expression)*;
 ```
 
-# Basic Example
+## Basic Example
 
 This example illustrate many aspects of the proposed syntax:
 
@@ -218,7 +217,7 @@ model CategoriesPosts {
 }
 ```
 
-# Expression generators
+## Expression generators
 
 > Note: this section is experimental and might never be implemented in Prisma.
 > This might be a better fit in the modifiers layer.
@@ -234,11 +233,11 @@ model User {
 }
 ```
 
-# Relations
+## Relations
 
-# 1-1
+### 1-1
 
-## Specifying Relation id side
+#### Specifying Relation id side
 
 ```groovy
 model User {
@@ -256,7 +255,7 @@ model Customer {
 
 The relationship can be made on either side, but the `@id` indicates where the data is stored. You can think of this as a pointer to the Customer id field.
 
-# 1-M
+### 1-M
 
 ```groovy
 model Writer {
@@ -274,7 +273,7 @@ model Blog {
   has-many relationship.
 - `blogs Blog[]` names the back-relation, but is entirely optional
 
-# M-N
+### M-N
 
 Blogs can have multiple writers
 
@@ -305,7 +304,7 @@ model BlogsWriters {
 - The `BlogsWriters` holds data about the relationship and points to the data types
   in the `Blog` and `Writer` models
 
-# Ambiguous Relations
+### Ambiguous Relations
 
 With explicit join tables, we have less ambiguities, but we may still have issues like this:
 
@@ -324,13 +323,40 @@ model Question {
 }
 ```
 
-## Self-Referential Models
+### Self-Referential Models
 
 ```groovy
 // @id could probably be implied here
 model Employee {
   id         int          primary() serial()
   reportsTo  Employee@id
+}
+```
+
+### Embedded Models
+
+```groovy
+model Human {
+  id     int   primary() serial()
+  name   text
+  height int
+}
+
+model Employee {
+  Human
+  employer  text
+  height    float
+}
+```
+
+Models can be embedded inside of other models, resulting in an Employee that looks like this:
+
+```groovy
+model Employee {
+  id      int   primary() serial()
+  name    text
+  height  int
+  height  float
 }
 ```
 
@@ -488,3 +514,5 @@ model User {
   updatedAt updated_at
 }
 ```
+
+More questions: https://github.com/prisma/rfcs/blob/datamodel/text/0000-datamodel.md#open-questions
