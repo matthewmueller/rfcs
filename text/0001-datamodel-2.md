@@ -20,7 +20,7 @@ This RFC is a potential answer to an open question posed in the previous RFC:
 
 - One configuration file for prisma (WIP)
 - Can be rendered into raw JSON
-- Strict Machine formatting (0 bikeshedding)
+- Strict Machine formatting (␀ bikeshedding)
 - Multi-line support and optional single-line via commas
 - Unicode (emoji) support
 
