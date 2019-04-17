@@ -1,6 +1,6 @@
 # Datamodel 2 (Experimental Syntax)
 
-This RFC attempts to improve the syntax laid out in [current RFC on Data Model 2](https://github.com/prisma/rfcs/blob/datamodel/text/0000-datamodel.md#1-1), specs out a few additional features and tries to unify some concepts.
+This RFC attempts to improve the syntax laid out in [current RFC on Data Model 2](https://github.com/prisma/rfcs/blob/datamodel/text/0000-datamodel.md#1-1), spec out a few additional features and unify some concepts.
 
 This RFC is a potential answer to an open question posed in the previous RFC:
 
