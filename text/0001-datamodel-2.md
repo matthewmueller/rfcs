@@ -36,7 +36,7 @@ This RFC is a potential answer to an open question posed in the previous RFC:
 - Introduced `source` block for connectors
 - Renamed `embedded` to `embed`
 - Replaced `=` in favor of `default(...)`
-- Replaced `string` with `text`
+- Replaced `text` with `text`
 - Added "embedded embeds"
 - Added metadata support to any block
 - Added top-level configuration support
@@ -148,7 +148,7 @@ model Profile {
 
 // named embed (reusable)
 embed Photo {
-  url  string
+  url  text
 
   // anonymous embed (optional)
   size {
@@ -245,9 +245,9 @@ Prisma could support expressions in generators:
 
 ```groovy
 model User {
-  name             string
+  name             text
   age              int
-  someRandomField  string  default(`${this.name} is ${this.age} years old`)
+  someRandomField  text  default(`${this.name} is ${this.age} years old`)
   ageInDays        int     default(`${this.age * 365}`)
 }
 ```
@@ -262,13 +262,13 @@ model User {
 model User {
   id        int           primary() serial()
   customer  Customer@id?
-  name      string
+  name      text
 }
 
 model Customer {
   id       int     primary() serial()
   user     User?
-  address  string
+  address  text
 }
 ```
 
@@ -415,13 +415,13 @@ e.g. Is this possible?
 model User {
   id        int          primary() serial()
   customer  Customer     relates(id)
-  name      string
+  name      text
 }
 
 model Customer {
   id       int    primary() serial()
   user     User
-  address  string
+  address  text
 }
 ```
 
@@ -431,21 +431,21 @@ Or is it always:
 model User {
   id        int         primary() serial()
   customer  Customer.id?
-  name      string
+  name      text
 }
 
 model Customer {
   id       int    primary() serial()
   user     User?
-  address  string
+  address  text
 }
 ```
 
-**5. `string` or `text`?**
+**5. `text` or `text`?**
 
 🙃
 
-- String is more familiar to programmers.
+- text is more familiar to programmers.
 - Text is more familiar to English speakers
 - Text is shorter.
 
