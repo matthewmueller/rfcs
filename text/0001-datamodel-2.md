@@ -178,7 +178,7 @@ model Post {
   title                  text
   author                 User@id
   reviewer               User@id
-  published              boolean      default(false)
+  published              bool         default(false)
 
   createdAt              datetime     createdAt() default(now())
   updatedAt              datetime     updatedAt() default(now())
@@ -403,7 +403,7 @@ model Employee {
 
 - Link tables are not usually needed right away, but are often good practice
   since you often want to attach metadata to that relation later on
-  (e.g. `can_edit boolean`). Some options:
+  (e.g. `can_edit bool`). Some options:
 
   1. We could make them optional at first, but create a table in the background (we'd need to do this anyway), but then when they specify the table and migrate, we'll be aware that this implicit join table became explicit in the datamodel
 
