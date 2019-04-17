@@ -18,6 +18,7 @@ This RFC is a potential answer to an open question posed in the previous RFC:
 ## Nice to Have
 
 - One configuration file for prisma (WIP)
+- Can be rendered into raw JSON
 - Machine formatted
 - Easily parsable ([avoid symbol tables](https://golang.org/doc/faq#different_syntax))
 - Multi-line support and optional single-line via commas
@@ -78,9 +79,6 @@ This example illustrate many aspects of the proposed syntax:
 ```groovy
 postgres_url = env("POSTGRES_URL")
 mongo_url = env("MONGO_URL")
-generate = ["js", "ts", "go"]
-
-
 
 // postgres datasource
 source postgres {
@@ -214,6 +212,28 @@ model CategoriesPosts {
   post      Post@id
   category  Category@id
   unique(post, category)
+}
+```
+
+## Configuration
+
+We're essentially a superset of the HCL2, so the configuration of Terraform would apply here:
+
+```
+postgres_url = env("POSTGRES_URL")
+mongo_url = env("MONGO_URL")
+
+generate javascript {
+  target = "es3"
+  output = "generated/js"
+}
+
+generate typescript {
+  // ...
+}
+
+generate flow {
+  // ...
 }
 ```
 
