@@ -6,7 +6,7 @@ This RFC is a potential answer to an open question posed in the previous RFC:
 
 > "If we were a little more radical with the syntax, could we create something much better?"
 
-- **Note:** There is a lot missing from this RFPC that is properly speced out in the previous RFC. If we like the direction of this syntax, I can start bringing concepts over or moving concepts to that spec.
+- **Warning:** There is a lot missing from this RFC that is properly speced out in the previous RFC. If we like the direction of this syntax, I can start bringing concepts over or moving concepts to that spec.
 
 ## Requirements
 
