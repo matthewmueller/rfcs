@@ -13,13 +13,14 @@ This RFC is a potential answer to an open question posed in the previous RFC:
 - Break from the existing GraphQL SDL syntax where it makes sense
 - Clearly separate responsibilities into two categories: Core Prisma primitives and Connector specific primitives
 - High-level relationships without ambiguities
+- Easily parsable ([avoid symbol tables, ideally](https://golang.org/doc/faq#different_syntax))
+- Abstraction over raw column names via field aliasing
 
 ## Nice to Have
 
 - One configuration file for prisma (WIP)
 - Can be rendered into raw JSON
-- Machine formatted
-- Easily parsable ([avoid symbol tables](https://golang.org/doc/faq#different_syntax))
+- Strict Machine formatting (0 bikeshedding)
 - Multi-line support and optional single-line via commas
 - Unicode (emoji) support
 
@@ -115,7 +116,7 @@ model User {
   email          postgres.Citext  unique() postgres.Like(".%.com")
   name           text?            check(name > 2)
   role           Role
-  profile        Profile?
+  profile        Profile?         alias("my_profile")
   createdAt      datetime         default(now())
   updatedAt      datetime         onChange(now())
 
