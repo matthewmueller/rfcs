@@ -415,13 +415,13 @@ e.g. Is this possible?
 
 ```groovy
 model User {
-  id        int          primary() serial()
-  customer  Customer     relates(id)
+  id        int           primary() serial()
+  customer  Customer@id?
   name      text
 }
 
 model Customer {
-  id       int    primary() serial()
+  id       int   primary() serial()
   user     User
   address  text
 }
@@ -431,8 +431,8 @@ Or is it always:
 
 ```groovy
 model User {
-  id        int         primary() serial()
-  customer  Customer.id?
+  id        int           primary() serial()
+  customer  Customer@id?
   name      text
 }
 
@@ -443,11 +443,11 @@ model Customer {
 }
 ```
 
-**5. `text` or `text`?**
+**5. `string` or `text`?**
 
 🙃
 
-- text is more familiar to programmers.
+- String is more familiar to programmers.
 - Text is more familiar to English speakers
 - Text is shorter.
 
