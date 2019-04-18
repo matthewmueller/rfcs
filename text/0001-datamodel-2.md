@@ -189,7 +189,7 @@ model Post {
   createdAt              datetime     createdAt() default(now())
   updatedAt              datetime     updatedAt() default(now())
 
-  categories:            CategoriesPosts[]
+  categories             CategoriesPosts[]
 }
 
 model MoviePost {
