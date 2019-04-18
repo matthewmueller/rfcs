@@ -8,6 +8,12 @@ This RFC is a potential answer to an open question posed in the previous RFC:
 
 - **Warning:** There is a lot missing from this RFC that is properly speced out in the previous RFC. If we like the direction of this syntax, I can start bringing concepts over or moving concepts to that spec.
 
+## Motivation
+
+If we're changing the syntax to something new anyway, which others will (skeptically) have to learn.
+
+We might as well try to make it a beautiful dialect for data modeling.
+
 ## Requirements
 
 - Break from the existing GraphQL SDL syntax where it makes sense
@@ -553,3 +559,9 @@ model User {
 ---
 
 More questions: https://github.com/prisma/rfcs/blob/datamodel/text/0000-datamodel.md#open-questions
+
+**9. Can we rename datamodel to schema?**
+
+I learned that the historical context for datamodel was that we needed something different than schema.graphql.
+
+I think we should revisit this because `schema.prisma` is much shorter and sounds nicer.
