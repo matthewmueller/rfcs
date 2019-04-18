@@ -21,11 +21,11 @@ We might as well try to make it a beautiful dialect for data modeling.
 - High-level relationships without ambiguities
 - Easily parsable ([avoid symbol tables, ideally](https://golang.org/doc/faq#different_syntax))
 - Abstraction over raw column names via field aliasing
+- Can be rendered into JSON
 
 ## Nice to Have
 
 - One configuration file for prisma (WIP)
-- Can be rendered into raw JSON
 - Strict Machine formatting (␀ bikeshedding)
 - Multi-line support and optional single-line via commas
 - Unicode (emoji) support
