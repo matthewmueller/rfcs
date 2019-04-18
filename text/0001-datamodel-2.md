@@ -6,11 +6,15 @@ This RFC is a potential answer to an open question posed in the previous RFC:
 
 > "If we were a little more radical with the syntax, could we create something much better?"
 
-- **Warning:** There is a lot missing from this RFC that is properly speced out in the previous RFC. If we like the direction of this syntax, I can start bringing concepts over or moving concepts to that spec.
+- **Warning:** There is a lot missing from this RFC that is properly speced out in the previous RFC. If we like the direction of this syntax, I can start moving concepts over to that spec.
 
 ## Motivation
 
 If we're changing the syntax to something new anyway, which others will (skeptically) have to learn, then we might as well try to make it a beautiful dialect for data modeling.
+
+Getting this right will be extremely important. Whether you're introspecting or starting from scratch, the datamodel is the first window into the Prisma world ▲. We want to make a good impression.
+
+My goal here is to explore the space a bit further and hopefully reach consensus on a syntax we can all get behind.
 
 ## Requirements
 
