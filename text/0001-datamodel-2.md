@@ -10,9 +10,7 @@ This RFC is a potential answer to an open question posed in the previous RFC:
 
 ## Motivation
 
-If we're changing the syntax to something new anyway, which others will (skeptically) have to learn.
-
-We might as well try to make it a beautiful dialect for data modeling.
+If we're changing the syntax to something new anyway, which others will (skeptically) have to learn, then we might as well try to make it a beautiful dialect for data modeling.
 
 ## Requirements
 
