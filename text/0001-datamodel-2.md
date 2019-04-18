@@ -82,18 +82,20 @@ mongo_url    = env("MONGO_URL")
 
 // postgres datasource
 source postgres {
+  type    = "postgres"
   url     = postgres_url
   default = true
 }
 
 // mongo datasource
 source mongo {
-  url = mongo_url
+  type = "mongo"
+  url  = mongo_url
 }
 
 // connect to our secondary Mongo DB
-source mongo {
-  alias    = "mgo2"
+source mgo2 {
+  type     = "mongo"
   host     = "localhost"
   port     = 27017
   database = "neato2"
@@ -328,6 +330,8 @@ model BlogsWriters {
 ### Ambiguous Relations
 
 With explicit join tables, we have less ambiguities, but we may still have issues like this:
+
+**TODO** I don't think `Question@asker` and `Question@answerer` is quite right, since those would probably point at the whole question model, not a particular field on the model.
 
 ```groovy
 model User {
