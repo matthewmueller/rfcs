@@ -603,6 +603,7 @@ model Teammate {
 ### Answer
 
 Consensus suggests that we stick with "developer terms". `string` it is!
+
 </details>
 
 <details>
@@ -711,6 +712,7 @@ those guarentees.
 ### Answer
 
 Keep in mind, but punt on this use case for now.
+
 </details>
 
 <details>
@@ -1080,7 +1082,7 @@ func main() {
 }
 ```
 
-Where you could work with common higher-level types (in this case `google.UUID`) that you could work with (rather than `[16]byte`) and it would know how to serialize / deserialize.
+Where you could work with common higher-level types (in this case `google.UUID`) rather than `[16]byte` and the client itself would know how to serialize / deserialize.
 
 I also think we could solve this with attributes and that we can also support this use case at the client layer, translating to simple types before sending to Rust, so I'm not too worried about this decision either way. Up to you!
 
