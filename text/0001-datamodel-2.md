@@ -1211,7 +1211,7 @@ model User {
 }
 
 model Customer {
-  id       int     primary() serial()
+  id       int                      primary() serial()
   email    string
   gateway  Gateway
   user     User?
@@ -1229,13 +1229,13 @@ It'd also be familiar to SQL folks and would allow us to do `Customer(id, addres
 
 ```groovy
 model User {
-  id        int           primary() serial()
+  id        int                    primary() serial()
   customer  Customer(id_address)?
   name      string
 }
 
 model Customer {
-  id       int         primary() serial()
+  id       int                     primary() serial()
   address  string
   user     User?
 
