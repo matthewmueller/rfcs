@@ -431,7 +431,7 @@ model Document {
   revision   int     @default(1)
   blocks     Block[]
 
-  @primary(projectID, revision)
+  primary(projectID, revision)
 }
 
 model Block {
