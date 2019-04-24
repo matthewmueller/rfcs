@@ -134,8 +134,8 @@ model User {
 }
 
 enum Role {
-  USER  string // unless explicit, defaults to "USER"
-  ADMIN string default("A")
+  USER   // unless explicit, defaults to "USER"
+  ADMIN  @default("A")
 }
 
 model Profile {
@@ -427,8 +427,8 @@ Our model would look like this:
 
 ```groovy
 model Document {
-  projectID  string  default('')
-  revision   int     default(1)
+  projectID  string  @default('')
+  revision   int     @default(1)
   blocks     Block[]
 
   @primary(projectID, revision)
@@ -499,11 +499,11 @@ Here's an example of gofmt in action when I press save in VSCode:
 
 ![gofmt](https://cldup.com/ooQHBLtQtL.gif)
 
-For our syntax, it would be nice to arrange the syntax tokens in 3 columns:
+For our syntax, it would be nice to arrange the document into 3 columns:
 
 ```groovy
 model User {
-  id:             Int     primary() postgres.serial()
+  id:             Int     @primary @postgres.serial()
   name:           String
   profile: {
     avatarUrl:    String?
@@ -513,7 +513,7 @@ model User {
 }
 
 model Post {
-  id:             Int     primary() postgres.serial()
+  id:             Int     @primary @postgres.serial()
   title:          String
   body:           String
 }
@@ -580,10 +580,10 @@ We could also say that the `updated_at` model trigger is a special procedure tha
 ```groovy
 model Teammate {
   id          int       @primary @serial
-  team_id     string    onUpdate(cascade())
+  team_id     string    @onUpdate(cascade())
   slack_id    string
   created_at  datetime
-  updated_at  datetime  onUpdate(autoupdate())
+  updated_at  datetime  @onUpdate(autoupdate())
 
   onDelete(team_id, cascade())
 }
