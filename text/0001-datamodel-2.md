@@ -1330,4 +1330,4 @@ https://github.com/search?q=language%3Asql
 
 Download a bunch of these. Spin up temporary databases with these schemas, introspect them, translate them to our evolving Datamodel AST, and then generate the Datamodel AST and compare results.
 
-This would probably be a 2-week engineering effort for 1 or 2 people, but may give us the best results and also battle-test our introspection algorithms.
+It would take a bit of time to go through and download these, but may give us the best results and also battle-test our introspection algorithms.
