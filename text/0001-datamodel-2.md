@@ -825,7 +825,7 @@ model User {
 
 ### Answer
 
-For cases like these we'd like to offer "type specifications" (better name? "type upgrade") as attributes. This way we can keep the fields types low-level and universal, but "upgrade" the type for databases that support it.
+For cases like these we'd like to offer "type specifications" (better name? "type upgrade"?) as attributes. This way we can keep the fields types low-level and universal, but "upgrade" the type for databases that support it.
 
 ```groovy
 model User {
