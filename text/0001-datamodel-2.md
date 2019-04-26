@@ -873,7 +873,7 @@ The reason to bring the model attributes below is that it adds consistency to th
 
 ```
 block-type block-name {
-  field-name field-datatype  field-attributes
+  field-name field-type  field-attributes
 }
 block-attributes
 ```
@@ -1492,7 +1492,7 @@ Given our new syntax format:
 
 ```
 block-type block-name {
-  field-name field-datatype  field-attributes
+  field-name field-type  field-attributes
 }
 block-attributes
 ```
@@ -1501,7 +1501,7 @@ We could be even more consistent if we did
 
 ```
 block-name block-type {
-  field-name field-datatype  field-attributes
+  field-name field-type  field-attributes
 }
 block-attributes
 ```
