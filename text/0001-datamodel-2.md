@@ -1486,6 +1486,40 @@ If we can error out in this case, I think this is totally acceptable, but I'd li
 
 This feeds into the previous question about relations and will be decided by @sorens and @marcus.
 
+## Crazy Idea
+
+Given our new syntax format:
+
+```
+block-type block-name {
+  field-name field-datatype  field-attributes
+}
+block-attributes
+```
+
+We could be even more consistent if we did
+
+```
+block-name block-type {
+  field-name field-datatype  field-attributes
+}
+block-attributes
+```
+
+This would be pretty radical, but it actually reads well in English!
+
+```groovy
+Post model {
+  id     string  @primary
+  title  string
+}
+
+Role enum {
+  PUBLISHED
+  DRAFT
+}
+```
+
 ---
 
 More questions: https://github.com/prisma/rfcs/blob/datamodel/text/0000-datamodel.md#open-questions
