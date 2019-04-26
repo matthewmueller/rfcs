@@ -1270,7 +1270,7 @@ The goal of this is more about sharing the same language between configuration a
 
 Yes lets unify the datamodel and configuration into one language(!)
 
-I f we're a superset of HCL, we're piggybacking off of Terraform's battle-testesd configuration use cases.
+If we're a superset of HCL, we're piggybacking off of Terraform's battle-testesd configuration use cases.
 
 ### Should we reduce the syntax further, by eliminating/changing _multiple statements per line_ and _multi-line statements_?
 
