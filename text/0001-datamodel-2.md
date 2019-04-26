@@ -733,14 +733,46 @@ I think we should revisit this because `schema.prisma` is much shorter and sound
 
 </details>
 
-# Open Questions
-
 ## Lowercase primitives, uppercase indentifiers?
 
 - If primitives are considered special and cannot be overridden
   then I think we should have special syntax for them. If they are
   simply types that are booted up at start (GraphQL), they should
   be treated like every other type.
+
+### Answer
+
+Primitives are special, so it most likely makes sense to separate their types from everything else. For model and embed blocks, we all seem to agree that they should be capitalized.
+
+## Consider the low-level field and model names?
+
+I'm starting to think that it might be best to use the low-level field names as the default for datamodel 2.
+
+```groovy
+model users {
+  id          int
+  first_name  string
+}
+
+model posts {
+  user_id  User
+}
+```
+
+There are two reasons for this:
+
+1. Less mental mapping between alias and actual column name.
+2. Aliases won't be stable across languages, for example:
+
+- In Javascript: `first_name => firstName`
+- In Go: `first_name => FirstName`
+- In Ruby/Python: `first_name => first_name`
+
+### Answer
+
+Prisma doesn't want to expose all the low-level details of the underlying columns, but if you introspect aliases will map directly to the existing column names since there's no other reasonable default.
+
+As far as aliases changing across languages, variations in case is not a big deal.
 
 ## Do we want back-relations to be optional?
 
@@ -751,25 +783,9 @@ I think we should revisit this because `schema.prisma` is much shorter and sound
   2. No back-relation when not provided (affects client API)
   3. Build-time (`prisma generate`) error when no back-relation provided
 
-## Should we have named arguments?
+### Answer
 
-I generally like named arguments more, but with this new syntax it feels
-like named arguments could generally be different attributes:
-
-```
-db(name: "users")
-```
-
-to
-
-```
-db("users") or name("users") or db.name("users")
-```
-
-In the cases where it does matter, we could maybe get assistance from
-VSCode on this one. Here's what Android Studio does for Kotlin:
-
-![named params](https://cldup.com/bXwmV_70KW.png)
+Historically Prisma did 3., but migrated to 1. for a better experience. We'll stick with 1. for now and plan to offer IDE features like green/blue/yellow edit squiggies to suggest changes.
 
 ## Should `id`, `created_at`, `updated_at` be special types that the database adds?
 
@@ -807,6 +823,16 @@ model User {
 }
 ```
 
+### Answer
+
+For cases like these we'd like to offer "type specifications" (better name? "type upgrade") as attributes. This way we can keep the fields types low-level and universal, but "upgrade" the type for databases that support it.
+
+```groovy
+model User {
+  id         text  @as(postgres.UUID) @as(mongo.ObjectID)
+}
+```
+
 ## Can we make syntax more familiar?
 
 Right now the syntax is a mismash of SQL, Terraform and Go. I think there are steps we can take to make it more familiar to GraphQL/Typescript users.
@@ -826,6 +852,31 @@ Also, it's a relatively new concept (C/C++ don't include it). I'd like to learn 
 #### Use @attribute instead of attribute()
 
 I like this idea because it would simplify `unique()` to `@unique`. I wish it wasn't an "at sign", because "at unique" doesn't make sense. Maybe we could just say it's the "attribute sign". 😬
+
+### Answer
+
+Drop the `:`, add the `@` attribute back in for both field attributes and model attributes.
+
+The new syntax will look like this:
+
+```groovy
+model Post {
+  id     int     @primary
+  title  string
+  author Author
+}
+// unique composite
+@unique(title, author)
+```
+
+The reason to bring the model attributes below is that it adds consistency to the attribute syntax and solves multi-line issues.
+
+```
+block-type block-name {
+  field-name field-datatype  field-attributes
+}
+block-attributes
+```
 
 ## Can we improve comma / multi-line support?
 
@@ -911,6 +962,20 @@ model User {
     unique(email, name)             alias("email_name_index")
   }
 }
+```
+
+### Answer
+
+The new syntax resolves multi-line issues without needing commas.
+
+```groovy
+model Post {
+  id     int     @primary
+  title  string
+  author Author
+}
+// unique composite
+@unique(title, author)
 ```
 
 ## Should we merge blocks with model attributes?
@@ -1016,6 +1081,10 @@ model Post {
 
 If I'm honest, I don't think this looks as nice as the way SQL does it, but this would also resolve the named arguments & multi-line support open questions and may improve embedded embeds syntax so it might be worth it!
 
+### Answer
+
+Machine formatting should take care of most of the "discipline" issues and placing the model attributes below will force them into one consistent place.
+
 ## Should we have custom field type support or support primitives with attributes?
 
 > Feedback: email postgres.Citext unique() postgres.Like(“.%.com”)
@@ -1085,6 +1154,12 @@ func main() {
 Where you could work with common higher-level types (in this case `google.UUID`) rather than `[16]byte` and the client itself would know how to serialize / deserialize.
 
 I also think we could solve this with attributes and that we can also support this use case at the client layer, translating to simple types before sending to Rust, so I'm not too worried about this decision either way. Up to you!
+
+### Answer
+
+We're going to use "type specifications"/"type upgrades" to allow primitive types to be upgraded for databases that support custom features.
+
+We'll want to support the UUID use-case above, so client generators will need to be able to understand these type specifications and what database they're generating for to build out these higher-level APIs.
 
 ## Should we store configuration alongside the Datamodel?
 
@@ -1191,6 +1266,144 @@ This proposal is not about forcing users to have all their configuration in 1 fi
 
 The goal of this is more about sharing the same language between configuration and the datamodel (as opposed to SDL and YAML) and figuring out a way to join everything together into one final, consumable configuration.
 
+### Answer
+
+Yes lets unify the datamodel and configuration into one language(!)
+
+I f we're a superset of HCL, we're piggybacking off of Terraform's battle-testesd configuration use cases.
+
+### Should we reduce the syntax further, by eliminating/changing _multiple statements per line_ and _multi-line statements_?
+
+I might be in the minority of people who really like the SQL syntax 😅
+
+I think we could build on ANSI SQL's 33-year-old syntax with more structure, less punctuation and proper machine formatting. If we remove _multiple statements per line_ and _multi-line statements_ or add delimiters in theses cases (e.g. `,` or `\`). If so we could have a syntax like this:
+
+```groovy
+model User {
+  meta {
+    db = "people"
+  }
+
+  id          int       primary postgres.serial() start_at(100)
+  first_name  string
+  last_name   string
+  email       string    unique
+  posts       Posts[]
+  accounts    Accounts
+  created_at  datetime  default(now)
+  updated_at  datetime  default(now)
+
+  unique(first_name, last_name)
+  before_update(updated_at, autoupdate())
+}
+
+embed Accounts {
+  provider  AccountProvider
+}
+
+enum AccountProviders {
+  GOOGLE
+  TWITTER
+  FACEBOOK
+}
+
+model Post {
+  slug   string
+  title  string
+
+  primary(slug, created_at)
+}
+```
+
+The difference being that we could add attributes that don't require empty parens `()`. There may be an ambiguity in the column identifiers and functions without `()`. I'd need to check that better if we push further down this road.
+
+It's important to keep in mind that the current syntax highlighting is misleading. It would actually look more like this:
+
+![actual syntax](https://cldup.com/VIxlQ084dV.png)
+
+But wayyyy better 😅
+
+#### Answer
+
+- We're not going to support multiple fields per line.
+- We're going to go with the @ attribute symbol and shift the model attributes below
+
+### Apply a data-driven approach to finding the right syntax?
+
+One question I keep asking myself is how will this syntax look across a wide spectrum of databases. We could apply a data-driven approach to finding this answer. By searching github for `language:sql`:
+
+https://github.com/search?q=language%3Asql
+
+Download a bunch of these. Spin up temporary databases with these schemas, introspect them, translate them to our evolving Datamodel AST, and then generate the Datamodel AST and compare results.
+
+It would take a bit of time to go through and download these, but may give us the best results and also battle-test our introspection algorithms.
+
+#### Answer
+
+Done via [prisma-render](https://github.com/prisma/prisma-render) in [database-schema-examples](https://github.com/prisma/database-schema-examples).
+
+# Open Questions
+
+## Should enums be capitalize or lowercase
+
+Generally the syntax suggests that all primitives are lowercase while all "block"s are uppercase. This breaks down with enum.
+
+Instead of this:
+
+```groovy
+model User {
+  id             int              @primary @serial
+  role           Role
+}
+
+enum Role {
+  USER   // unless explicit, defaults to "USER"
+  ADMIN  @default("A")
+}
+```
+
+We'd do this:
+
+```groovy
+model User {
+  id             int              @primary @serial
+  role           role
+}
+
+enum role {
+  USER   // unless explicit, defaults to "USER"
+  ADMIN  @default("A")
+}
+```
+
+I didn't quite understand the implementation details of why enums would be lowercase, but it would break that mental model of all blocks being capitalized. We may want to change the syntax in that case to be consistent.
+
+Maybe @marcus and @sorens want to clarify here?
+
+## Should we have named arguments?
+
+I generally like named arguments more, but with this new syntax it feels
+like named arguments could generally be different attributes:
+
+```
+db(name: "users")
+```
+
+to
+
+```
+db("users") or name("users") or db.name("users")
+```
+
+In the cases where it does matter, we could maybe get assistance from
+VSCode on this one. Here's what Android Studio does for Kotlin:
+
+![named params](https://cldup.com/bXwmV_70KW.png)
+
+### Next Steps
+
+This hasn't been decided yet but has been discussed. I think this will answer itself once we start generating full syntaxes
+
 ## Does `Model@field` make sense for relations?
 
 > Feedback: Model@field doesn't feel right
@@ -1245,6 +1458,10 @@ model Customer {
 
 **Update:** I've updated the above spec to reflect this change.
 
+### Next Steps
+
+Generally we like the `Customer(id, address)` or `Customer(id_address)`, but @marcus and @sorens have a better idea of the edge cases so they will discuss foreign relations more and make a decision on a final syntax here.
+
 ## Is it okay to enforce Model@id for 1:1 relations?
 
 For example, there's not enough data to determine where the reference should be `User.customer_id` or `Customer.user_id`.
@@ -1265,69 +1482,10 @@ model Customer {
 
 If we can error out in this case, I think this is totally acceptable, but I'd like to hear what you think too.
 
+### Next Steps
+
+This feeds into the previous question about relations and will be decided by @sorens and @marcus.
+
 ---
 
 More questions: https://github.com/prisma/rfcs/blob/datamodel/text/0000-datamodel.md#open-questions
-
-## Miscellaneous Ideas 💡
-
-### We can reduce the syntax further, if we eliminate/change _multiple statements per line_ and _multi-line statements_
-
-I might be in the minority of people who really like the SQL syntax 😅
-
-I think we could build on ANSI SQL's 33-year-old syntax with more structure, less punctuation and proper machine formatting. If we remove _multiple statements per line_ and _multi-line statements_ or add delimiters in theses cases (e.g. `,` or `\`). If so we could have a syntax like this:
-
-```groovy
-model User {
-  meta {
-    db = "people"
-  }
-
-  id          int       primary postgres.serial() start_at(100)
-  first_name  string
-  last_name   string
-  email       string    unique
-  posts       Posts[]
-  accounts    Accounts
-  created_at  datetime  default(now)
-  updated_at  datetime  default(now)
-
-  unique(first_name, last_name)
-  before_update(updated_at, autoupdate())
-}
-
-embed Accounts {
-  provider  AccountProvider
-}
-
-enum AccountProviders {
-  GOOGLE
-  TWITTER
-  FACEBOOK
-}
-
-model Post {
-  slug   string
-  title  string
-
-  primary(slug, created_at)
-}
-```
-
-The difference being that we could add attributes that don't require empty parens `()`. There may be an ambiguity in the column identifiers and functions without `()`. I'd need to check that better if we push further down this road.
-
-It's important to keep in mind that the current syntax highlighting is misleading. It would actually look more like this:
-
-![actual syntax](https://cldup.com/VIxlQ084dV.png)
-
-But wayyyy better 😅
-
-### Apply a data-driven approach to finding the right syntax
-
-One question I keep asking myself is how will this syntax look across a wide spectrum of databases. We could apply a data-driven approach to finding this answer. By searching github for `language:sql`:
-
-https://github.com/search?q=language%3Asql
-
-Download a bunch of these. Spin up temporary databases with these schemas, introspect them, translate them to our evolving Datamodel AST, and then generate the Datamodel AST and compare results.
-
-It would take a bit of time to go through and download these, but may give us the best results and also battle-test our introspection algorithms.
