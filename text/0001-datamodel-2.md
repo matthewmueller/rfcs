@@ -742,7 +742,7 @@ I think we should revisit this because `schema.prisma` is much shorter and sound
 
 ### Answer
 
-Primitives are special, so it most likely makes sense to separate their types from everything else. For model and embed blocks, we all seem to agree that they should be capitalized.
+Primitives are special, so we'll make them lowercase to separate them from higher-level types. For model and embed blocks, we all seem to agree that they should be PascalCase.
 
 ## Consider the low-level field and model names?
 
