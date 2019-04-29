@@ -39,7 +39,7 @@ My goal here is to explore the space a bit further and hopefully reach consensus
 - Removed `ID` as a primitive type
 - Merged prisma.yml configuration into the datamodel (WIP)
 - Replaced relation metadata with `Model@field`
-- Introduced `source` block for connectors
+- introduced `source` block for connectors
 - Renamed `embedded` to `embed`
 - Replaced `=` in favor of `default(...)`
 - Added "embedded embeds"
@@ -109,7 +109,7 @@ source mgo2 {
   }
 }
 
-type Numeric = postgres.Numeric(5, 2)
+type Numeric postgres.Numeric(5, 2)
 
 model User {
   meta = {
@@ -129,9 +129,10 @@ model User {
   weight         Numeric          @alias("my_weight")
   posts          Post[]
 
-  // composite indexes
-  unique(email, name)             @alias("email_name_index")
+
 }
+// composite indexes (last field optional)
+@unique(email, name, "email_name_index")
 
 enum Role {
   USER   // unless explicit, defaults to "USER"
@@ -159,13 +160,13 @@ embed Photo {
   url  string
 
   // anonymous embed (optional)
-  size {
+  embed size {
     height int
     width int
   }?
 
   // anonymous embed
-  alternatives {
+  embed alternatives {
     height int
     width int
   }[]
@@ -178,8 +179,6 @@ model Post {
                                       @serial,
                                       // this is okay too...
                                       @default("some default") // default value
-  // model attribute right after also fine
-  unique(title, author)
 
   title      string
   author     User(id)
@@ -191,6 +190,7 @@ model Post {
 
   categories CategoriesPosts[]
 }
+@unique(title, author)
 
 model MoviePost {
   // mixin Post's fields into MoviePost
@@ -218,8 +218,8 @@ model Category {
 model CategoriesPosts {
   post      Post(id)
   category  Category(id)
-  unique(post, category)
 }
+@unique(post, category)
 ```
 
 ## Configuration
@@ -324,11 +324,10 @@ model Writer {
 model BlogsWriters {
   blog      Blog@id
   author    Writer@id
-  is_owner  bool
-
-  // enforce a composite unique
-  unique(author, blog)
+  is_owner  boolean
 }
+// enforce a composite unique
+@unique(author, blog)
 ```
 
 - Many-to-Many relationships always require an explicit join table.
@@ -465,8 +464,8 @@ model Employee {
   first_name  string
   email       string
 
-  unique(first_name, email)
 }
+@unique(first_name, email)
 ```
 
 ## Indexes for expressions
@@ -481,10 +480,9 @@ model Employee {
   first_name  string
   last_name   string
   email       string
-
-  index(lower(first_name))
-  index(first_name + " " + last_name)
 }
+@index(lower(first_name))
+@index(first_name + " " + last_name)
 ```
 
 > Based on: https://www.postgresql.org/docs/9.1/indexes-expressional.html
@@ -503,19 +501,19 @@ For our syntax, it would be nice to arrange the document into 3 columns:
 
 ```groovy
 model User {
-  id:             Int     @primary @postgres.serial()
-  name:           String
+  id:             int     @primary @postgres.serial()
+  name:           string
   profile: {
-    avatarUrl:    String?
-    displayName:  String?
+    avatarUrl:    string?
+    displayName:  string?
   }
   posts:          Post[]
 }
 
 model Post {
-  id:             Int     @primary @postgres.serial()
-  title:          String
-  body:           String
+  id:             int     @primary @postgres.serial()
+  title:          string
+  body:           string
 }
 ```
 
@@ -570,9 +568,9 @@ model Teammate {
   created_at  datetime
   updated_at  datetime
 
-  onUpdate(autoupdate(updated_at))
-  onDelete(team_id, cascade())
 }
+@onUpdate(autoupdate(updated_at))
+@onDelete(team_id, cascade())
 ```
 
 We could also say that the `updated_at` model trigger is a special procedure that operates on fields and then we could do:
@@ -585,8 +583,8 @@ model Teammate {
   created_at  datetime
   updated_at  datetime  @onUpdate(autoupdate())
 
-  onDelete(team_id, cascade())
 }
+@onDelete(team_id, cascade())
 ```
 
 # Resolved Questions
@@ -733,18 +731,24 @@ I think we should revisit this because `schema.prisma` is much shorter and sound
 
 </details>
 
-## Lowercase primitives, uppercase indentifiers?
+<details>
+<summary>Lowercase primitives, uppercase indentifiers?</summary>
+<br>
 
-- If primitives are considered special and cannot be overridden
-  then I think we should have special syntax for them. If they are
-  simply types that are booted up at start (GraphQL), they should
-  be treated like every other type.
+If primitives are considered special and cannot be overridden
+then I think we should have special syntax for them. If they are
+simply types that are booted up at start (GraphQL), they should
+be treated like every other type.
 
 ### Answer
 
 Primitives are special, so we'll make them lowercase to separate them from higher-level types. For model and embed blocks, we all seem to agree that they should be PascalCase.
 
-## Consider the low-level field and model names?
+</details>
+
+<details>
+<summary>Consider the low-level field and model names?</summary>
+<br>
 
 I'm starting to think that it might be best to use the low-level field names as the default for datamodel 2.
 
@@ -774,7 +778,11 @@ Prisma doesn't want to expose all the low-level details of the underlying column
 
 As far as aliases changing across languages, variations in case is not a big deal.
 
-## Do we want back-relations to be optional?
+</details>
+
+<details>
+<summary>Do we want back-relations to be optional?</summary>
+<br>
 
 - My typical stance is to enforce good practices (e.g. prettier),
   and provide one way to do it. We have some options with back-relations though:
@@ -787,7 +795,11 @@ As far as aliases changing across languages, variations in case is not a big dea
 
 Historically Prisma did 3., but migrated to 1. for a better experience. We'll stick with 1. for now and plan to offer IDE features like green/blue/yellow edit squiggies to suggest changes.
 
-## Should `id`, `created_at`, `updated_at` be special types that the database adds?
+</details>
+
+<details>
+<summary>Should `id`, `created_at`, `updated_at` be special types that the database adds?</summary>
+<br>
 
 The DM2 proposal proposes:
 
@@ -833,7 +845,11 @@ model User {
 }
 ```
 
-## Can we make syntax more familiar?
+</details>
+
+<details>
+<summary>Can we make syntax more familiar?</summary>
+<br>
 
 Right now the syntax is a mismash of SQL, Terraform and Go. I think there are steps we can take to make it more familiar to GraphQL/Typescript users.
 
@@ -878,7 +894,11 @@ block-type block-name {
 block-attributes
 ```
 
-## Can we improve comma / multi-line support?
+</details>
+
+<details>
+<summary>Can we improve comma / multi-line support?</summary>
+<br>
 
 > Feedback: Comma/multi-line behavior seems error-prone
 
@@ -978,7 +998,11 @@ model Post {
 @unique(title, author)
 ```
 
-## Should we merge blocks with model attributes?
+</details>
+
+<details>
+<summary>Should we merge blocks with model attributes?</summary>
+<br>
 
 > Feedback: The current proposals requires discipline by the user to arrange it so that the fields are easy to read. Right now it would be possible to mix field and index declarations.
 >
@@ -1085,7 +1109,11 @@ If I'm honest, I don't think this looks as nice as the way SQL does it, but this
 
 Machine formatting should take care of most of the "discipline" issues and placing the model attributes below will force them into one consistent place.
 
-## Should we have custom field type support or support primitives with attributes?
+</details>
+
+<details>
+<summary>Should we have custom field type support or support primitives with attributes?</summary>
+<br>
 
 > Feedback: email postgres.Citext unique() postgres.Like(“.%.com”)
 >
@@ -1161,7 +1189,11 @@ We're going to use "type specifications"/"type upgrades" to allow primitive type
 
 We'll want to support the UUID use-case above, so client generators will need to be able to understand these type specifications and what database they're generating for to build out these higher-level APIs.
 
-## Should we store configuration alongside the Datamodel?
+</details>
+
+<details>
+<summary>Should we store configuration alongside the Datamodel?</summary>
+<br>
 
 > Feedback: Storing the config along side with the Datamodel is not a good idea in my opinion. It looks somewhat neat like that at first glance but it will quickly turn into a nightmare if you have different configurations for 2 environments. Imagine a config for Mongo for example. Locally you have a super simple one that connects simply to localhost. On production you likely have something that involves a lot of settings around replica sets etc. In this case you want to omit some keys locally and this is where those config languages usually break down.
 >
@@ -1272,7 +1304,11 @@ Yes lets unify the datamodel and configuration into one language(!)
 
 If we're a superset of HCL, we're piggybacking off of Terraform's battle-testesd configuration use cases.
 
-### Should we reduce the syntax further, by eliminating/changing _multiple statements per line_ and _multi-line statements_?
+</details>
+
+<details>
+<summary>Should we reduce the syntax further, by eliminating/changing _multiple statements per line_ and _multi-line statements_?</summary>
+<br>
 
 I might be in the minority of people who really like the SQL syntax 😅
 
@@ -1328,7 +1364,11 @@ But wayyyy better 😅
 - We're not going to support multiple fields per line.
 - We're going to go with the @ attribute symbol and shift the model attributes below
 
-### Apply a data-driven approach to finding the right syntax?
+</details>
+
+<details>
+<summary>Apply a data-driven approach to finding the right syntax?</summary>
+<br>
 
 One question I keep asking myself is how will this syntax look across a wide spectrum of databases. We could apply a data-driven approach to finding this answer. By searching github for `language:sql`:
 
@@ -1341,6 +1381,8 @@ It would take a bit of time to go through and download these, but may give us th
 #### Answer
 
 Done via [prisma-render](https://github.com/prisma/prisma-render) in [database-schema-examples](https://github.com/prisma/database-schema-examples).
+
+</details>
 
 # Open Questions
 
