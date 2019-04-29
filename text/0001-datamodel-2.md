@@ -96,7 +96,7 @@ model User {
 
   // model fields
   id             int              @primary @serial
-  email          text             @unique @postgres.Like(".%.com") @as(postgres.Citext)
+  email          string             @unique @postgres.Like(".%.com") @as(postgres.Citext)
   name           string?          @check(name > 2)
   role           Role
   profile        Profile?         @alias("my_profile")
@@ -133,7 +133,7 @@ model Profile {
 
 // named embed (reusable)
 embed Photo {
-  id   text    @as(mgo2.ObjectID)
+  id   string    @as(mgo2.ObjectID)
   url  string
 
   // anonymous embed (optional)
@@ -803,7 +803,7 @@ For cases like these we'd like to offer "type specifications" (better name? "typ
 
 ```groovy
 model User {
-  id         text  @as(postgres.UUID) @as(mongo.ObjectID)
+  id  string  @as(postgres.UUID) @as(mongo.ObjectID)
 }
 ```
 
