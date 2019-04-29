@@ -457,8 +457,8 @@ model Employee {
   last_name   string
   email       string
 }
-@index(lower(first_name))
-@index(first_name + " " + last_name)
+@postgres.index(lower(first_name))
+@postgres.index(first_name + " " + last_name)
 ```
 
 > Based on: https://www.postgresql.org/docs/9.1/indexes-expressional.html
