@@ -707,6 +707,8 @@ those guarentees.
 
 `datamodel.prisma` is fine. Stop complaining @matthewmueller.
 
+**Update:** Actually, @matthewmueller doesn't have to complain anymore because if we do terraform's autodiscover `*.prisma` concatenation approach, I can name the `.prisma` files whatever I want!
+
 ---
 
 I learned that the historical context for datamodel was that we needed something different than schema.graphql.
