@@ -138,14 +138,14 @@ embed Photo {
 
   // anonymous embed (optional)
   embed size {
-    height int
-    width int
+    height  int
+    width   int
   }?
 
   // anonymous embed
   embed alternatives {
-    height int
-    width int
+    height  int
+    width   int
   }[]
 }
 
