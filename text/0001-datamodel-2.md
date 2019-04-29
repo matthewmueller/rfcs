@@ -37,8 +37,7 @@ My goal here is to explore the space a bit further and hopefully reach consensus
 - Moved model directives from the top of the model into the block
 - Lowercase primitives, capitalized higher-level types
 - Removed `ID` as a primitive type
-- Merged prisma.yml configuration into the datamodel (WIP)
-- Replaced relation metadata with `Model@field`
+- Merged prisma.yml configuration into the datamodel
 - introduced `source` block for connectors
 - Renamed `embedded` to `embed`
 - Replaced `=` in favor of `default(...)`
@@ -49,32 +48,9 @@ My goal here is to explore the space a bit further and hopefully reach consensus
 - Revised connector-specific types
 - Added model embedding (fragments in GraphQL)
 - Adjust many-to-many convention `BlogToWriter` to `BlogsWriters`
-
-## Syntax (WIP)
-
-This following syntax is primarily inspired by [HCL2's blocks and attributes](https://github.com/hashicorp/hcl2/#information-model-and-syntax)
-concepts for the configuration and block formatting.
-
-```hcl
-ConfigFile   = Body;
-Body         = (Attribute | Block | OneLineBlock)*;
-Attribute    = Identifier "=" Expression Newline;
-Block        = Identifier (StringLit|Identifier)* "{" Newline Body "}" Newline;
-OneLineBlock = Identifier (StringLit|Identifier)* "{" (Identifier "=" Expression)? "}" Newline;
-```
-
-> https://github.com/hashicorp/hcl2/blob/master/hcl/hclsyntax/spec.md#structural-elements
-
-Additionally, this syntax has a concept of alias definitions, field definitions & block expressions.
-
-```
-SelectorExpression = Identifier "." Identifier
-AliasDefinition    = Identifier Identifier "=" (SelectorExpression|Identifier|Expression)
-// TODO: include multi-line expressions
-FieldDefinition    = Identifier (SelectorExpression|Identifier|Expression) (Expression)*;
-// Added Expressions from Body above
-Body               = (Attribute | Block | OneLineBlock | Expression)*;
-```
+- Prefix embedded embeds with `embed`
+- introduce `@as` for type specifications
+- rename `boolean` to `bool`
 
 ## Basic Example
 
@@ -109,7 +85,8 @@ source mgo2 {
   }
 }
 
-type Numeric postgres.Numeric(5, 2)
+// type definition
+type Numeric @postgres.Numeric(5, 2)
 
 model User {
   meta = {
@@ -119,7 +96,7 @@ model User {
 
   // model fields
   id             int              @primary @serial
-  email          postgres.Citext  @unique @postgres.Like(".%.com")
+  email          text             @unique @postgres.Like(".%.com") @as(postgres.Citext)
   name           string?          @check(name > 2)
   role           Role
   profile        Profile?         @alias("my_profile")
@@ -156,7 +133,7 @@ model Profile {
 
 // named embed (reusable)
 embed Photo {
-  id   mgo2.ObjectID
+  id   text    @as(mgo2.ObjectID)
   url  string
 
   // anonymous embed (optional)
@@ -224,7 +201,7 @@ model CategoriesPosts {
 
 ## Configuration
 
-Prisma's configuration and DataModel share the same language. The configuration and datamodel can be in 1 file or spread across multiple files, environments and networks. See the "Should we store configuration alongside the Datamodel?" open question below for a potential implementation.
+Prisma's configuration and DataModel share the same language. The configuration and datamodel can be in 1 file or spread across multiple files, environments or across the networks. See the "Should we store configuration alongside the Datamodel?" answer for more details.
 
 For syntax, we're essentially a superset of the HCL2, so the configuration of Terraform would apply here:
 
@@ -271,7 +248,7 @@ model User {
 ```groovy
 model User {
   id        int           @primary @serial
-  customer  Customer@id?
+  customer  Customer(id)?
   name      string
 }
 
@@ -282,9 +259,9 @@ model Customer {
 }
 ```
 
-The relationship can be made on either side, but the `@id` indicates where the data is stored. You can think of this as a pointer to the Customer id field.
+The relationship can be made on either side, but the `(id)` indicates where the data is stored. You can think of this as a pointer to the Customer id field.
 
-- `@id` is required here because we need to know where to put the
+- `(id)` is required here because we need to know where to put the
 
 ### 1-M
 
@@ -296,13 +273,13 @@ model Writer {
 
 model Blog {
   id      int        @primary @serial
-  author  Writer@id
+  author  Writer(id)
 }
 ```
 
-- `author Writer@id` points to the `id int` on `Writer` model, establishing the
+- `author Writer(id)` points to the `id int` on `Writer` model, establishing the
   has-many relationship.
-- We can make `@id` optional here as it can default to the primary key
+- We can make `(id)` optional here as it can default to the primary key
 - `blogs Blog[]` names the back-relation, but is entirely optional
 
 ### M-N
@@ -322,9 +299,9 @@ model Writer {
 
 // many to many
 model BlogsWriters {
-  blog      Blog@id
-  author    Writer@id
-  is_owner  boolean
+  blog      Blog(id)
+  author    Writer(id)
+  is_owner  bool
 }
 // enforce a composite unique
 @unique(author, blog)
@@ -338,10 +315,10 @@ model BlogsWriters {
 ### Self-Referential Models
 
 ```groovy
-// @id could probably be implied here
+// (id) could probably be implied here
 model Employee {
   id         int          @primary @serial
-  reportsTo  Employee@id
+  reportsTo  Employee(id)
 }
 ```
 
@@ -429,9 +406,8 @@ model Document {
   projectID  string  @default('')
   revision   int     @default(1)
   blocks     Block[]
-
-  primary(projectID, revision)
 }
+@primary(projectID, revision)
 
 model Block {
   id        int                            @primary
@@ -501,7 +477,7 @@ For our syntax, it would be nice to arrange the document into 3 columns:
 
 ```groovy
 model User {
-  id:             int     @primary @postgres.serial()
+  id:             int     @primary @postgres.@serial
   name:           string
   profile: {
     avatarUrl:    string?
@@ -511,7 +487,7 @@ model User {
 }
 
 model Post {
-  id:             int     @primary @postgres.serial()
+  id:             int     @primary @postgres.@serial
   title:          string
   body:           string
 }
@@ -592,21 +568,33 @@ model Teammate {
 <details>
 <summary>`string` or `text`?</summary>
 <br>
+
+### Answer
+
+Consensus suggests that we stick with "developer terms". `string` it is!
+
+---
+
 🙃
 
 - String is more familiar to programmers.
 - Text is more familiar to English speakers
 - Text is shorter.
 
-### Answer
-
-Consensus suggests that we stick with "developer terms". `string` it is!
-
 </details>
 
 <details>
 <summary>Should we enforce link tables?</summary>
 <br>
+
+### Answer
+
+Having a default behavior for implicit link tables for m:n relations is a good idea as it provides two benefits:
+
+1. Simpler to get started
+2. Portability between different databases that implement m:n relations in different ways.
+
+---
 
 - Link tables are not usually needed right away, but are often good practice
   since you often want to attach metadata to that relation later on
@@ -616,30 +604,29 @@ Consensus suggests that we stick with "developer terms". `string` it is!
 
 2. Enforce the link table at build-time when we run `prisma generate`. A bit simpler to implement and less magic, at the expense of cluttering up your datamodel file and forcing you to think more about your data layout earlier on (might not be a bad thing).
 
-### Answer
-
-Having a default behavior for implicit link tables for m:n relations is a good idea as it provides two benefits:
-
-1. Simpler to get started
-2. Portability between different databases that implement m:n relations in different ways.
-
 </details>
 
 <details>
 <summary>Can back-relations have a different nullability than the forward relations?</summary>
 <br>
 
+### Answer
+
+Yes this is possible. I don't think this will change our syntax it all, it was more for my knowledge 😬
+
+---
+
 e.g. Is this possible?
 
 ```groovy
 model User {
-  id        int           primary() serial()
+  id        int           @primary @serial
   customer  Customer(id)?
   name      string
 }
 
 model Customer {
-  id       int   primary() serial()
+  id       int   @primary @serial
   user     User
   address  string
 }
@@ -649,27 +636,30 @@ Or is it always:
 
 ```groovy
 model User {
-  id        int           primary() serial()
+  id        int           @primary @serial
   customer  Customer(id)?
   name      string
 }
 
 model Customer {
-  id       int    primary() serial()
+  id       int    @primary @serial
   user     User?
   address  string
 }
 ```
-
-### Answer
-
-Yes this is possible. I don't think this will change our syntax it all, it was more for my knowledge 😬
 
 </details>
 
 <details>
 <summary>Should we support Mongo's many-to-many relationship in relational databases?</summary>
 <br>
+
+### Answer
+
+Keep in mind, but punt on this use case for now.
+
+---
+
 This is what facebook needed to do to scale MySQL. It looks like the [original
 video from 2011](https://www.facebook.com/Engineering?sk=app_260691170608423) was taken down,
 but the gist is that they successfully scaled MySQL by add the foreign keys as an array in
@@ -707,27 +697,25 @@ model Post {
 How do we indicate that these are logical relationships without actually enforcing
 those guarentees.
 
-### Answer
-
-Keep in mind, but punt on this use case for now.
-
 </details>
 
 <details>
 <summary>Can we rename datamodel to schema?</summary>
 <br>
 
+### Answer
+
+`datamodel.prisma` is fine. Stop complaining @matthewmueller.
+
+---
+
 I learned that the historical context for datamodel was that we needed something different than schema.graphql.
 
 I think we should revisit this because `schema.prisma` is much shorter and sounds nicer.
 
-### Answer
-
 > Feedback: I still like datamodel. I think we will understand the role of the datamodel much better in a years time, and suggest we delay any renaming discussion til then.
 
 > Feedback: Please no. We just decided to switch from the term schema to datamodel in the backend 😂
-
-`datamodel.prisma` is fine. Stop complaining @matthewmueller.
 
 </details>
 
@@ -735,20 +723,30 @@ I think we should revisit this because `schema.prisma` is much shorter and sound
 <summary>Lowercase primitives, uppercase indentifiers?</summary>
 <br>
 
+### Answer
+
+Primitives are special, so we'll make them lowercase to separate them from higher-level types. For model and embed blocks, we all seem to agree that they should be PascalCase.
+
+---
+
 If primitives are considered special and cannot be overridden
 then I think we should have special syntax for them. If they are
 simply types that are booted up at start (GraphQL), they should
 be treated like every other type.
-
-### Answer
-
-Primitives are special, so we'll make them lowercase to separate them from higher-level types. For model and embed blocks, we all seem to agree that they should be PascalCase.
 
 </details>
 
 <details>
 <summary>Consider the low-level field and model names?</summary>
 <br>
+
+### Answer
+
+Prisma doesn't want to expose all the low-level details of the underlying columns, but if you introspect aliases will map directly to the existing column names since there's no other reasonable default.
+
+As far as aliases changing across languages, variations in case is not a big deal.
+
+---
 
 I'm starting to think that it might be best to use the low-level field names as the default for datamodel 2.
 
@@ -772,17 +770,17 @@ There are two reasons for this:
 - In Go: `first_name => FirstName`
 - In Ruby/Python: `first_name => first_name`
 
-### Answer
-
-Prisma doesn't want to expose all the low-level details of the underlying columns, but if you introspect aliases will map directly to the existing column names since there's no other reasonable default.
-
-As far as aliases changing across languages, variations in case is not a big deal.
-
 </details>
 
 <details>
 <summary>Do we want back-relations to be optional?</summary>
 <br>
+
+### Answer
+
+Historically Prisma did 3., but migrated to 1. for a better experience. We'll stick with 1. for now and plan to offer IDE features like green/blue/yellow edit squiggies to suggest changes.
+
+---
 
 - My typical stance is to enforce good practices (e.g. prettier),
   and provide one way to do it. We have some options with back-relations though:
@@ -791,21 +789,29 @@ As far as aliases changing across languages, variations in case is not a big dea
   2. No back-relation when not provided (affects client API)
   3. Build-time (`prisma generate`) error when no back-relation provided
 
-### Answer
-
-Historically Prisma did 3., but migrated to 1. for a better experience. We'll stick with 1. for now and plan to offer IDE features like green/blue/yellow edit squiggies to suggest changes.
-
 </details>
 
 <details>
 <summary>Should `id`, `created_at`, `updated_at` be special types that the database adds?</summary>
 <br>
 
+### Answer
+
+For cases like these we'd like to offer "type specifications" (better name? "type upgrade"?) as attributes. This way we can keep the fields types low-level and universal, but "upgrade" the type for databases that support it.
+
+```groovy
+model User {
+  id         text  @as(postgres.UUID) @as(mongo.ObjectID)
+}
+```
+
+---
+
 The DM2 proposal proposes:
 
 ```groovy
 model User {
-  id: ID @id
+  id: ID (id)
 }
 ```
 
@@ -835,39 +841,11 @@ model User {
 }
 ```
 
-### Answer
-
-For cases like these we'd like to offer "type specifications" (better name? "type upgrade"?) as attributes. This way we can keep the fields types low-level and universal, but "upgrade" the type for databases that support it.
-
-```groovy
-model User {
-  id         text  @as(postgres.UUID) @as(mongo.ObjectID)
-}
-```
-
 </details>
 
 <details>
 <summary>Can we make syntax more familiar?</summary>
 <br>
-
-Right now the syntax is a mismash of SQL, Terraform and Go. I think there are steps we can take to make it more familiar to GraphQL/Typescript users.
-
-> Feedback: How to reduce the learning curve / make the datamodel syntax feel more familiar
-
-### Ideas:
-
-#### Use field: Type instead of field Type
-
-This isn't a dealbreaker for me, but I find it to be an embellishment. From a parsing perspective, this syntax doesn't need to be here.
-
-The reason I originally removed it was to make use of the colon for aliasing, but I didn't end up using it. We may want to have this piece of syntax in the future.
-
-Also, it's a relatively new concept (C/C++ don't include it). I'd like to learn where it came from. My guess is that there was an ambiguity in going from Javascript to Typescript's syntax and they needed to add it and it has spread since then.
-
-#### Use @attribute instead of attribute()
-
-I like this idea because it would simplify `unique()` to `@unique`. I wish it wasn't an "at sign", because "at unique" doesn't make sense. Maybe we could just say it's the "attribute sign". 😬
 
 ### Answer
 
@@ -894,11 +872,47 @@ block-type block-name {
 block-attributes
 ```
 
+---
+
+Right now the syntax is a mismash of SQL, Terraform and Go. I think there are steps we can take to make it more familiar to GraphQL/Typescript users.
+
+> Feedback: How to reduce the learning curve / make the datamodel syntax feel more familiar
+
+### Ideas:
+
+#### Use field: Type instead of field Type
+
+This isn't a dealbreaker for me, but I find it to be an embellishment. From a parsing perspective, this syntax doesn't need to be here.
+
+The reason I originally removed it was to make use of the colon for aliasing, but I didn't end up using it. We may want to have this piece of syntax in the future.
+
+Also, it's a relatively new concept (C/C++ don't include it). I'd like to learn where it came from. My guess is that there was an ambiguity in going from Javascript to Typescript's syntax and they needed to add it and it has spread since then.
+
+#### Use @attribute instead of attribute()
+
+I like this idea because it would simplify `unique()` to `@unique`. I wish it wasn't an "at sign", because "at unique" doesn't make sense. Maybe we could just say it's the "attribute sign". 😬
+
 </details>
 
 <details>
 <summary>Can we improve comma / multi-line support?</summary>
 <br>
+
+### Answer
+
+The new syntax resolves multi-line issues without needing commas.
+
+```groovy
+model Post {
+  id     int     @primary
+  title  string
+  author Author
+}
+// unique composite
+@unique(title, author)
+```
+
+---
 
 > Feedback: Comma/multi-line behavior seems error-prone
 
@@ -984,25 +998,17 @@ model User {
 }
 ```
 
-### Answer
-
-The new syntax resolves multi-line issues without needing commas.
-
-```groovy
-model Post {
-  id     int     @primary
-  title  string
-  author Author
-}
-// unique composite
-@unique(title, author)
-```
-
 </details>
 
 <details>
 <summary>Should we merge blocks with model attributes?</summary>
 <br>
+
+### Answer
+
+Machine formatting should take care of most of the "discipline" issues and placing the model attributes below will force them into one consistent place.
+
+---
 
 > Feedback: The current proposals requires discipline by the user to arrange it so that the fields are easy to read. Right now it would be possible to mix field and index declarations.
 >
@@ -1105,15 +1111,19 @@ model Post {
 
 If I'm honest, I don't think this looks as nice as the way SQL does it, but this would also resolve the named arguments & multi-line support open questions and may improve embedded embeds syntax so it might be worth it!
 
-### Answer
-
-Machine formatting should take care of most of the "discipline" issues and placing the model attributes below will force them into one consistent place.
-
 </details>
 
 <details>
 <summary>Should we have custom field type support or support primitives with attributes?</summary>
 <br>
+
+### Answer
+
+We're going to use "type specifications"/"type upgrades" to allow primitive types to be upgraded for databases that support custom features.
+
+We'll want to support the UUID use-case above, so client generators will need to be able to understand these type specifications and what database they're generating for to build out these higher-level APIs.
+
+---
 
 > Feedback: email postgres.Citext unique() postgres.Like(“.%.com”)
 >
@@ -1143,7 +1153,7 @@ One reason I like this approach is that it would give us an extensible architect
 type Numeric = postgres.Numeric(5, 2)
 
 model Customer {
-  id       int     primary() serial()
+  id       int     @primary @serial
   weight   Numeric
   gateway  Gateway
 }
@@ -1183,17 +1193,19 @@ Where you could work with common higher-level types (in this case `google.UUID`)
 
 I also think we could solve this with attributes and that we can also support this use case at the client layer, translating to simple types before sending to Rust, so I'm not too worried about this decision either way. Up to you!
 
-### Answer
-
-We're going to use "type specifications"/"type upgrades" to allow primitive types to be upgraded for databases that support custom features.
-
-We'll want to support the UUID use-case above, so client generators will need to be able to understand these type specifications and what database they're generating for to build out these higher-level APIs.
-
 </details>
 
 <details>
 <summary>Should we store configuration alongside the Datamodel?</summary>
 <br>
+
+### Answer
+
+Yes lets unify the datamodel and configuration into one language(!)
+
+If we're a superset of HCL, we're piggybacking off of Terraform's battle-testesd configuration use cases.
+
+---
 
 > Feedback: Storing the config along side with the Datamodel is not a good idea in my opinion. It looks somewhat neat like that at first glance but it will quickly turn into a nightmare if you have different configurations for 2 environments. Imagine a config for Mongo for example. Locally you have a super simple one that connects simply to localhost. On production you likely have something that involves a lot of settings around replica sets etc. In this case you want to omit some keys locally and this is where those config languages usually break down.
 >
@@ -1298,17 +1310,18 @@ This proposal is not about forcing users to have all their configuration in 1 fi
 
 The goal of this is more about sharing the same language between configuration and the datamodel (as opposed to SDL and YAML) and figuring out a way to join everything together into one final, consumable configuration.
 
-### Answer
-
-Yes lets unify the datamodel and configuration into one language(!)
-
-If we're a superset of HCL, we're piggybacking off of Terraform's battle-testesd configuration use cases.
-
 </details>
 
 <details>
 <summary>Should we reduce the syntax further, by eliminating/changing _multiple statements per line_ and _multi-line statements_?</summary>
 <br>
+
+#### Answer
+
+- We're not going to support multiple fields per line.
+- We're going to go with the @ attribute symbol and shift the model attributes below
+
+---
 
 I might be in the minority of people who really like the SQL syntax 😅
 
@@ -1320,7 +1333,7 @@ model User {
     db = "people"
   }
 
-  id          int       primary postgres.serial() start_at(100)
+  id          int       primary postgres.@serial start_at(100)
   first_name  string
   last_name   string
   email       string    unique
@@ -1359,16 +1372,17 @@ It's important to keep in mind that the current syntax highlighting is misleadin
 
 But wayyyy better 😅
 
-#### Answer
-
-- We're not going to support multiple fields per line.
-- We're going to go with the @ attribute symbol and shift the model attributes below
-
 </details>
 
 <details>
 <summary>Apply a data-driven approach to finding the right syntax?</summary>
 <br>
+
+#### Answer
+
+Done via [prisma-render](https://github.com/prisma/prisma-render) in [database-schema-examples](https://github.com/prisma/database-schema-examples).
+
+---
 
 One question I keep asking myself is how will this syntax look across a wide spectrum of databases. We could apply a data-driven approach to finding this answer. By searching github for `language:sql`:
 
@@ -1377,10 +1391,6 @@ https://github.com/search?q=language%3Asql
 Download a bunch of these. Spin up temporary databases with these schemas, introspect them, translate them to our evolving Datamodel AST, and then generate the Datamodel AST and compare results.
 
 It would take a bit of time to go through and download these, but may give us the best results and also battle-test our introspection algorithms.
-
-#### Answer
-
-Done via [prisma-render](https://github.com/prisma/prisma-render) in [database-schema-examples](https://github.com/prisma/database-schema-examples).
 
 </details>
 
@@ -1450,23 +1460,23 @@ This hasn't been decided yet but has been discussed. I think this will answer it
 
 > Feedback: Model@field doesn't feel right
 
-> Feedback: I like the notation for relations and the fields they refer to: author User@id. How would a reference to a combined unique criteria look like? Something like this? author User@(email,name)?
+> Feedback: I like the notation for relations and the fields they refer to: author User(id). How would a reference to a combined unique criteria look like? Something like this? author User@(email,name)?
 
 > Feedback: Usage of @ to declare reference columns. Maybe we can just use a ., like when accessing the field of an object?
 
-> Feedback: I really like this suggestion as a way to break out of default behavior. The default should still be to reference the @id (or whatever syntax we choose for it) field (Primary Key in relational databases and \_id in Mongo)
+> Feedback: I really like this suggestion as a way to break out of default behavior. The default should still be to reference the (id) (or whatever syntax we choose for it) field (Primary Key in relational databases and \_id in Mongo)
 
 Marcus brought up a really great point about combined unique criteria. I like his suggestion for changing `@` to `(...)`
 
 ```groovy
 model User {
-  id        int                     primary() serial()
+  id        int                     @primary @serial
   customer  Customer(id, address)?
   name      string
 }
 
 model Customer {
-  id       int                      primary() serial()
+  id       int                      @primary @serial
   email    string
   gateway  Gateway
   user     User?
@@ -1484,13 +1494,13 @@ It'd also be familiar to SQL folks and would allow us to do `Customer(id, addres
 
 ```groovy
 model User {
-  id        int                    primary() serial()
+  id        int                    @primary @serial
   customer  Customer(id_address)?
   name      string
 }
 
 model Customer {
-  id       int                     primary() serial()
+  id       int                     @primary @serial
   address  string
   user     User?
 
@@ -1504,19 +1514,19 @@ model Customer {
 
 Generally we like the `Customer(id, address)` or `Customer(id_address)`, but @marcus and @sorens have a better idea of the edge cases so they will discuss foreign relations more and make a decision on a final syntax here.
 
-## Is it okay to enforce Model@id for 1:1 relations?
+## Is it okay to enforce Model(id) for 1:1 relations?
 
 For example, there's not enough data to determine where the reference should be `User.customer_id` or `Customer.user_id`.
 
 ```groovy
 model User {
-  id        int           primary() serial()
+  id        int           @primary @serial
   customer  Customer?
   name      string
 }
 
 model Customer {
-  id       int     primary() serial()
+  id       int     @primary @serial
   user     User?
   address  string
 }
