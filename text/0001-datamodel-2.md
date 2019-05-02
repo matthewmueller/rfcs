@@ -3311,7 +3311,7 @@ This makes me think that we should pick one or the other but not both.
 ```groovy
 model Post {
   db = "posts"
-  slug        text
+  slug        string
   created_at  datetime  @default(now())
 }
 @primary(slug, created_at)
@@ -3323,7 +3323,7 @@ outside looks better.
 
 ```groovy
 model Post {
-  slug        text
+  slug        string
   created_at  datetime  @default(now())
 }
 @db("posts")
@@ -3335,7 +3335,7 @@ model Post {
 ```groovy
 model Post {
   db = "posts"
-  slug        text
+  slug        string
   created_at  datetime  @default(now())
   primary(slug, created_at)
 }
@@ -3365,7 +3365,7 @@ model Post {
     db = "posts"
   }
 
-  slug           text
+  slug           string
   custom_fields  json      @default({
                              some    = "key"
                              another = "key"
@@ -3395,7 +3395,7 @@ model Post {
     db: "posts"
   }
 
-  slug           text
+  slug           string
   custom_fields  json      @default({
                                 some: "key"
                              another: "key"
