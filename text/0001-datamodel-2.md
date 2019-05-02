@@ -3379,19 +3379,19 @@ see any reason why we should have 2 syntaxes.
 
 ```groovy
 source pg {
-  url = env("POSTGRES_URL")
+  url: env("POSTGRES_URL")
 }
 
 generate typescript {
-  directory = "./photon"
-  options = {
+  directory: "./photon"
+  options: {
        some: "more"
     options: "cool"
   }
 }
 
 model Post {
-  meta = {
+  meta: {
     db: "posts"
   }
 
