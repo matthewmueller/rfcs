@@ -120,8 +120,8 @@ model User {
 @unique(email, name, "email_name_index")
 
 enum Role {
-  USER   // unless explicit, defaults to "USER"
-  ADMIN  @default("A")
+  USER   enum  // unless explicit, defaults to "USER"
+  ADMIN  enum  @default("A")
 }
 
 model Profile {
@@ -2747,8 +2747,8 @@ model Customer {
 }
 
 enum Gateway {
-  PAYPAL,
-  STRIPE
+  PAYPAL string,
+  STRIPE string
 }
 ```
 
@@ -2978,9 +2978,9 @@ embed Accounts {
 }
 
 enum AccountProviders {
-  GOOGLE
-  TWITTER
-  FACEBOOK
+  GOOGLE    string
+  TWITTER   string
+  FACEBOOK  string
 }
 
 model Post {
@@ -3068,8 +3068,8 @@ model Customer {
 }
 
 enum Gateway {
-  PAYPAL,
-  STRIPE
+  PAYPAL string,
+  STRIPE string
 }
 ```
 
@@ -3118,8 +3118,8 @@ model User {
 }
 
 enum Role {
-  USER   // unless explicit, defaults to "USER"
-  ADMIN  @default("A")
+  USER  string   // unless explicit, defaults to "USER"
+  ADMIN string  @default("A")
 }
 ```
 
@@ -3132,8 +3132,8 @@ model User {
 }
 
 enum role {
-  USER   // unless explicit, defaults to "USER"
-  ADMIN  @default("A")
+  USER  string // unless explicit, defaults to "USER"
+  ADMIN string @default("A")
 }
 ```
 
@@ -3180,8 +3180,8 @@ Post model {
 }
 
 Role enum {
-  PUBLISHED
-  DRAFT
+  PUBLISHED  string
+  DRAFT      string
 }
 ```
 
