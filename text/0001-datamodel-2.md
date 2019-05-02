@@ -1445,7 +1445,7 @@ model Post {
 It can produce some really bad pathological cases where a single long line
 introduces extraneous whitespace on thousands of lines in a large file.
 
-### Checks
+### Checks (Constraints)
 
 > DRAFT
 
