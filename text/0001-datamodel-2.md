@@ -476,9 +476,10 @@ In this case Employee extends Human and would result in this:
 
 ```groovy
 model Employee {
-  id      int     @primary
-  name    string
-  height  float
+  id        int     @primary
+  name      string
+  employer  string
+  height    float
 }
 ```
 
