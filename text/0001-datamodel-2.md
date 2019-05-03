@@ -1120,8 +1120,15 @@ model User {
 }
 ```
 
+Lists can also be optional and will give the list a 3rd state, null:
+
+```
+Blog[]: empty list or non-empty list of blogs (default: [])
+Blog[]?: empty list, non-empty list of blogs or null (default: null)
+```
+
 The default output for a required list is an empty list. The default output for
-a nullable list is null
+a nullable list is null.
 
 ### Custom Type Definitions
 
@@ -3257,6 +3264,8 @@ This would mean attributes like `@sequence` would take an object:
 
 With this, I propose the same parameter-style as Typescript.
 
+##
+
 # Things I'm not happy with yet
 
 As I've integrated Soren's proposal and my own, I've come across some areas
@@ -3402,3 +3411,79 @@ model Post {
                            })
 }
 ```
+
+## Optional field on implicit 1-M relations are slightly inconsistent
+
+This is very minor, but given this syntax:
+
+```groovy
+model Writer {
+  id      int        @primary
+  blogs   Blog[]?
+}
+
+model Blog {
+  id      int        @primary
+}
+```
+
+The previous spec suggests that `?` in `Blog[]?` has no affect. It gets turned into:
+
+```groovy
+model Writer {
+  id      int        @primary
+  blogs   Blog[]
+}
+
+model Blog {
+  id         int         @primary
+  writer_id  Writer(id)?
+}
+```
+
+It'd be more consistent if it did:
+
+```groovy
+model Writer {
+  id      int        @primary
+  blogs   Blog[]?
+}
+
+model Blog {
+  id         int         @primary
+  writer_id  Writer(id)?
+}
+```
+
+
+And required implicit blogs:
+
+```groovy
+model Writer {
+  id      int        @primary
+  blogs   Blog[]
+}
+
+model Blog {
+  id         int         @primary
+  writer_id  Writer(id)?
+}
+```
+
+Resulted in:
+
+```groovy
+model Writer {
+  id      int        @primary
+  blogs   Blog[]
+}
+
+model Blog {
+  id         int         @primary
+  writer_id  Writer(id)?
+}
+```
+
+We probably still want an optional Writer by default.
+
+Super minor, I'm not very opinionated on this. Just pointing it out.
