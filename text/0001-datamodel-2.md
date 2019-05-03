@@ -103,15 +103,15 @@ model User {
   }
 
   // model fields
-  id             int              @primary
-  email          string           @unique  @postgres.Like(".%.com") @as(postgres.Citext)
-  name           string?          @check(name > 2)
+  id             int       @primary
+  email          string    @unique  @postgres.Like(".%.com") @as(postgres.Citext)
+  name           string?   @check(name > 2)
   role           Role
-  profile        Profile?         @alias("my_profile")
-  createdAt      datetime         @default(now())
-  updatedAt      datetime         @onChange(now())
+  profile        Profile?  @alias("my_profile")
+  createdAt      datetime  @default(now())
+  updatedAt      datetime  @onChange(now())
 
-  weight         Numeric          @alias("my_weight")
+  weight         Numeric   @alias("my_weight")
   posts          Post[]
 
 
@@ -160,18 +160,18 @@ embed Photo {
 model Post {
   // intentionally messy 😅
   // multi-line support, separated with commas
-  id                     int          @primary,
-                                      @serial,
-                                      // this is okay too...
-                                      @default("some default") // default value
+  id  int  @primary,
+           @serial,
+           // this is okay too...
+           @default("some default") // default value
 
   title      string
   author     User(id)
   reviewer   User(id)
-  published  bool               @default(false)
+  published  bool      @default(false)
 
-  createdAt  datetime           @createdAt @default(now())
-  updatedAt  datetime           @updatedAt @default(now())
+  createdAt  datetime  @default(now())
+  updatedAt  datetime  @onChange(now())
 
   categories CategoriesPosts[]
 }
@@ -3427,7 +3427,8 @@ model Blog {
 }
 ```
 
-The previous spec suggests that `?` in `Blog[]?` has no affect. It gets turned into:
+The previous spec suggests that `?` in `Blog[]?` has no affect. It gets turned
+into:
 
 ```groovy
 model Writer {
@@ -3454,7 +3455,6 @@ model Blog {
   writer_id  Writer(id)?
 }
 ```
-
 
 And required implicit blogs:
 
