@@ -3158,7 +3158,7 @@ Keep as is to stay consistent.
 </details>
 
 <details>
-<summary>What do you guys think of this crazy idea?</summary>
+<summary>What do you ladies and gentlemen think of this crazy idea?</summary>
 <br>
 
 Given our new syntax format:
@@ -3195,7 +3195,7 @@ Role enum {
 
 ### Answer
 
-Nah bro.
+Nah.
 
 </details>
 
