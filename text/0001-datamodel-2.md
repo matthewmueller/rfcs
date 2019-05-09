@@ -94,7 +94,12 @@ source mgo2 {
 }
 
 // type definition
-type Numeric @postgres.Numeric(5, 2)
+type Numeric Decimal = "2.0" @postgres.Numeric(5, 2)
+
+enum Color {
+  Red  = "RED"
+  Teal = "TEAL"
+}
 
 model User {
   meta = {
@@ -107,9 +112,10 @@ model User {
   email          string    @unique  @postgres.Like(".%.com") @as(postgres.Citext)
   name           string?   @check(name > 2)
   role           Role
-  profile        Profile?  @alias("my_profile")
-  createdAt      datetime  @default(now())
-  updatedAt      datetime  @onChange(now())
+  profile        Profile?               @alias("my_profile")
+  createdAt      datetime = "akldfask" 
+                                        @alias("ok")
+  updatedAt      datetime = "ok"             @onChange(now())
 
   weight         Numeric   @alias("my_weight")
   posts          Post[]
