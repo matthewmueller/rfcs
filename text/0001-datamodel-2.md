@@ -113,9 +113,9 @@ model User {
   name           string?   @check(name > 2)
   role           Role
   profile        Profile?               @alias("my_profile")
-  createdAt      datetime = "akldfask" 
+  createdAt      datetime 
                                         @alias("ok")
-  updatedAt      datetime = "ok"             @onChange(now())
+  updatedAt      datetime               @onChange(now())
 
   weight         Numeric   @alias("my_weight")
   posts          Post[]
