@@ -94,7 +94,12 @@ source mgo2 {
 }
 
 // type definition
-type Numeric @postgres.Numeric(5, 2)
+type Numeric Decimal = "2.0" @postgres.Numeric(5, 2)
+
+enum Color {
+  Red  = "RED"
+  Teal = "TEAL"
+}
 
 model User {
   meta = {
