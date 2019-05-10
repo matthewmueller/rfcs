@@ -103,13 +103,13 @@ model User {
   }
 
   // model fields
-  id             int       @primary
-  email          string    @unique  @postgres.Like(".%.com") @as(postgres.Citext)
-  name           string?   @check(name > 2)
+  id             Int       @primary
+  email          String    @unique  @postgres.Like(".%.com") @as(postgres.Citext)
+  name           String?   @check(name > 2)
   role           Role
   profile        Profile?  @alias("my_profile")
-  createdAt      datetime  @default(now())
-  updatedAt      datetime  @onChange(now())
+  createdAt      Datetime  @default(now())
+  updatedAt      Datetime  @onChange(now())
 
   weight         Numeric   @alias("my_weight")
   posts          Post[]
@@ -131,9 +131,9 @@ model Profile {
   }
 
   // model fields
-  id       int            @primary
+  id       Int            @primary
   author   User(id)
-  bio      string
+  bio      String
 
   // nullable array items and nullable photos field
   photos   Photo?[]?
@@ -141,37 +141,37 @@ model Profile {
 
 // named embed (reusable)
 embed Photo {
-  id   string    @as(mgo2.ObjectID)
-  url  string
+  id   String    @as(mgo2.ObjectID)
+  url  String
 
   // anonymous embed (optional)
   embed size {
-    height  int
-    width   int
+    height  Int
+    width   Int
   }?
 
   // anonymous embed
   embed alternatives {
-    height  int
-    width   int
+    height  Int
+    width   Int
   }[]
 }
 
 model Post {
   // intentionally messy 😅
   // multi-line support, separated with commas
-  id  int  @primary,
+  id  Int  @primary,
            @serial,
            // this is okay too...
            @default("some default") // default value
 
-  title      string
+  title      String
   author     User(id)
   reviewer   User(id)
   published  bool      @default(false)
 
-  createdAt  datetime  @default(now())
-  updatedAt  datetime  @onChange(now())
+  createdAt  Datetime  @default(now())
+  updatedAt  Datetime  @onChange(now())
 
   categories CategoriesPosts[]
 }
@@ -182,11 +182,11 @@ model MoviePost {
   // Based on Go's struct embedding syntax
   Post
 
-  stars   string
-  review  string
+  stars   String
+  review  String
 
   // duplicate title would replace the included model field
-  title   string
+  title   String
 }
 
 // Comments in this datamodel have meaning. Look to godoc for inspiration:
@@ -194,8 +194,8 @@ model MoviePost {
 
 // Comments directly above a model are attached to the model
 model Category {
-  id     int                @primary
-  name   string
+  id     Int                @primary
+  name   String
   posts  CategoriesPosts[]
 }
 
@@ -422,9 +422,9 @@ import User {
 
 // in github.com/my/app private repo
 model User {
-  id          int     @primary
-  first_name  string
-  last_name   string
+  id          Int     @primary
+  first_name  String
+  last_name   String
 }
 @unique(first_name, last_name)
 ```
@@ -460,15 +460,15 @@ Datamodel 2 also offers a way to break up large models.
 
 ```groovy
 model Human {
-  id     int     @primary
-  name   string
+  id     Int     @primary
+  name   String
   height int
 }
 
 model Employee {
   Human
-  employer  string
-  height    float
+  employer  String
+  height    Float
 }
 ```
 
@@ -476,10 +476,10 @@ In this case Employee extends Human and would result in this:
 
 ```groovy
 model Employee {
-  id        int     @primary
-  name      string
-  employer  string
-  height    float
+  id        Int     @primary
+  name      String
+  employer  String
+  height    Float
 }
 ```
 
@@ -663,8 +663,8 @@ model Primitives {
 }
 
 enum SomeEnum {
-  SomeEnumValue       int
-  SomeOtherEnumValue  int
+  SomeEnumValue       Int
+  SomeOtherEnumValue  Int
 }
 ```
 
@@ -686,8 +686,8 @@ of values. This new feature will be backwards compatible:
 
 ```groovy
 enum SomeEnum {
-  SomeEnumValue      int @default(1)
-  SomeOtherEnumValue int @default(2)
+  SomeEnumValue      Int @default(1)
+  SomeOtherEnumValue Int @default(2)
 }
 ```
 
@@ -718,15 +718,15 @@ must ensure that their guarantees are upheld:
 
 ```groovy
 model User {
-  id        int           @primary
+  id        Int           @primary
   customer  Customer(id)?
-  name      string
+  name      String
 }
 
 model Customer {
-  id       int     @primary
+  id       Int     @primary
   user     User?
-  address  string
+  address  String
 }
 ```
 
@@ -753,18 +753,45 @@ Under the hood, the data looks like this:
 - When `Customer(id)?` is nullable, the back-relation `User?`, must also be
   nullable.
 
+##### Rules for Back-Relations
+
+The forward relation is: `customer Customer(id)?` The back-relation is:
+`user User?`
+
+The back-relation is _always_ optional. This is a valid datamodel:
+
+```groovy
+model User {
+  id        Int           @primary
+  customer  Customer(id)?
+  name      String
+}
+
+model Customer {
+  id       Int     @primary
+  address  String
+}
+```
+
+When there's no back-relation specified, we choose it for you. The rule is as
+follows:
+
+- Camel case the pointed from model
+
+> TODO: wrte out how this affects generators
+
 #### 1-M (one-to-many)
 
 A writer can have multiple blogs
 
 ```groovy
 model Writer {
-  id      int        @primary
+  id      Int        @primary
   blogs   Blog[]
 }
 
 model Blog {
-  id      int        @primary
+  id      Int        @primary
   author  Writer(id)
 }
 ```
@@ -793,12 +820,12 @@ It is possible to specify only one relation field:
 
 ```groovy
 model Writer {
-  id      int        @primary
+  id      Int        @primary
   blogs   Blog[]
 }
 
 model Blog {
-  id      int        @primary
+  id      Int        @primary
 }
 ```
 
@@ -807,12 +834,12 @@ relation field on `Blog` named after the `Writer` model:
 
 ```groovy
 model Writer {
-  id      int        @primary
+  id      Int        @primary
   blogs   Blog[]
 }
 
 model Blog {
-  id         int         @primary
+  id         Int         @primary
   writer_id  Writer(id)?
 }
 ```
@@ -841,12 +868,12 @@ supports implicit join tables as a great for getting started.
 
 ```groovy
 model Blog {
-  id       int       @primary
+  id       Int       @primary
   authors  Writer[]
 }
 
 model Writer {
-  id      int      @primary
+  id      Int      @primary
   blogs   Blog[]
 }
 ```
@@ -891,12 +918,12 @@ Explicit Join Tables.
 
 ```groovy
 model Blog {
-  id       int        @primary
+  id       Int        @primary
   authors  Writer[]
 }
 
 model Writer {
-  id      int      @primary
+  id      Int      @primary
   blogs   Blog[]
 }
 
@@ -935,7 +962,7 @@ model BlogsWriters {
 ```groovy
 // (id) could probably be implied here
 model Employee {
-  id         int          @primary
+  id         Int          @primary
   reportsTo  Employee(id)
 }
 ```
@@ -963,13 +990,13 @@ Our model would look like this:
 
 ```groovy
 model User {
-  id        int         @primary
+  id        Int         @primary
   asked     Question[]
   answered  Question[]
 }
 
 model Question {
-  id        int       @primary
+  id        Int       @primary
   asker     User(id)
   answerer  User(id)
 }
@@ -996,14 +1023,14 @@ Our model would look like this:
 
 ```groovy
 model Document {
-  projectID  string  @default('')
-  revision   int     @default(1)
+  projectID  String  @default('')
+  revision   Int     @default(1)
   blocks     Block[]
 }
 @primary(projectID, revision)
 
 model Block {
-  id        int                            @primary
+  id        Int                            @primary
   document  Document(projectID, revision)
 }
 ```
@@ -1019,12 +1046,12 @@ responsible for fetching and stitching the data together.
 
 ```groovy
 model User {
-  id        string
+  id        String
   customer  StripeCustomer?
 }
 
 embed StripeCustomer {
-  id     string
+  id     String
   cards  Source[]
 }
 
@@ -1045,9 +1072,9 @@ can be nested as deep as you want. Please don't go too deep though.
 
 ```groovy
 model User {
-  id        string
+  id        String
   customer  {
-    id     string
+    id     String
     cards  {
       type Card
     }[]
@@ -1067,17 +1094,17 @@ above and below
 
 ```groovy
 model User {
-  id    string
-  name  string
+  id    String
+  name  String
   customer  {
-    id         string
-    full_name  string
+    id         String
+    full_name  String
     cards  {
       type  Card
     }[]
   }?
-  age   int
-  email string
+  age   Int
+  email String
 }
 
 enum Card {
@@ -1094,9 +1121,9 @@ make them optional, you add a `?` at the end.
 
 ```groovy
 model User {
-  names    string[]?
-  ages     int?
-  heights  float?
+  names    String[]?
+  ages     Int?
+  heights  Float?
   card     Card?
 }
 
@@ -1115,9 +1142,9 @@ Lists are denoted with `[]` at the end of the type.
 
 ```groovy
 model User {
-  names    string[]
-  ages     int[]
-  heights  float[]
+  names    String[]
+  ages     Int[]
+  heights  Float[]
 }
 ```
 
@@ -1145,11 +1172,11 @@ can be convenient to create a custom type instead of repeating the
 configuration. This also ensures that all uses are in sync.
 
 ```groovy
-type Email string @check.regexp(".*.com")
+type Email String @check.regexp(".*.com")
 
 // Without custom type
 model User {
-  email  string  @check.regexp(".*.com")
+  email  String  @check.regexp(".*.com")
 }
 
 // With custom type
@@ -1175,7 +1202,7 @@ support indexing. The connector could introduce a new primitive type to expose
 this type:
 
 ```groovy
-type EmojiString string
+type EmojiString String
 ```
 
 Prisma users can then use it in their datamodel like this:
@@ -1193,7 +1220,7 @@ EmojiString is longer than 1000 characters, Prisma will reject it with a
 standard error message without calling the connector:
 
 ```groovy
-type EmojiString string @check.lengthLessThan(1000)
+type EmojiString String @check.lengthLessThan(1000)
 ```
 
 > TODO: try and map out check constraints, it's really weird in this case.
@@ -1227,11 +1254,11 @@ Model attributes apply to the whole model and appear at the end of the model.
 model User {
   to = "users"
 
-  id          int     @primary
-  first_name  string
-  last_name   string
-  salary      int
-  bonus       int
+  id          Int     @primary
+  first_name  String
+  last_name   String
+  salary      Int
+  bonus       Int
 }
 @to("users")
 @check(salary > bonus)
@@ -1280,12 +1307,12 @@ source pg {
 }
 
 model User {
-  id           string   @as(pg.char(100))
-  age          int      @as(pg.smallInt)
-  name         string   @as(pg.varchar(128))
-  height       float    @as(pg.float4)
-  cashBalance  decimal  @as(pg.numeric(30, 60))
-  props        json     @as(pg.mediumText)
+  id           String   @as(pg.char(100))
+  age          Int      @as(pg.smallInt)
+  name         String   @as(pg.varchar(128))
+  height       Float    @as(pg.float4)
+  cashBalance  Decimal  @as(pg.numeric(30, 60))
+  props        Json     @as(pg.mediumText)
 }
 ```
 
@@ -1303,7 +1330,7 @@ source ms {
 }
 
 model User {
-  age int @as(pg.smallint) @as(ms.smallint)
+  age Int @as(pg.smallint) @as(ms.smallint)
 }
 ```
 
@@ -1347,9 +1374,9 @@ Default values using a dynamic generator can be specified as follows:
 
 ```groovy
 model User {
-  age        int       @default(random(1,5))
-  height     float     @default(random(1,5))
-  createdAt  datetime  @default(now())
+  age        Int       @default(random(1,5))
+  height     Float     @default(random(1,5))
+  createdAt  Datetime  @default(now())
 }
 ```
 
@@ -1362,7 +1389,7 @@ column modifiers respectively:
 
 ```groovy
 model User {
-  id  int  @as(pg.serial(100, 10))
+  id  Int  @as(pg.serial(100, 10))
            @as(ms.autoIncrement(100, 10))
            @as(maria.sequence(100, 10))
 }
@@ -1377,10 +1404,10 @@ create an index on that field
 
 ```groovy
 model Employee {
-  id      int     @primary
-  name    string  @unique
-  height  int
-  height  float
+  id      Int     @primary
+  name    String  @unique
+  height  Int
+  height  Float
 }
 ```
 
@@ -1390,9 +1417,9 @@ Use model attributes to represent indexes across fields:
 
 ```groovy
 model Employee {
-  id          int     @primary
-  first_name  string
-  email       string
+  id          Int     @primary
+  first_name  String
+  email       String
 
 }
 @unique(first_name, email)
@@ -1406,10 +1433,10 @@ You can also create indexes for common expressions:
 
 ```groovy
 model Employee {
-  id          int     @primary
-  first_name  string
-  last_name   string
-  email       string
+  id          Int     @primary
+  first_name  String
+  last_name   String
+  email       String
 }
 @postgres.index(lower(first_name))
 @postgres.index(first_name + " " + last_name)
@@ -1434,19 +1461,19 @@ For our syntax, it would be nice to arrange the document into 3 columns:
 
 ```groovy
 model User {
-  id:             int     @primary @postgres.@serial
-  name:           string
+  id:             Int     @primary @postgres.@serial
+  name:           String
   profile: {
-    avatarUrl:    string?
-    displayName:  string?
+    avatarUrl:    String?
+    displayName:  String?
   }
   posts:          Post[]
 }
 
 model Post {
-  id:             int     @primary @postgres.@serial
-  title:          string
-  body:           string
+  id:             Int     @primary @postgres.@serial
+  title:          String
+  body:           String
 }
 ```
 
@@ -1477,11 +1504,11 @@ Example:
 
 ```groovy
 model Employee {
-  salary     int
-  bonus      int
-  firstName  string
-  lastName   string
-  email      string @check.regexp("(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)")
+  salary     Int
+  bonus      Int
+  firstName  String
+  lastName   String
+  email      String @check.regexp("(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)")
 }
 ```
 
@@ -1494,11 +1521,11 @@ Example:
 
 ```groovy
 model Employee {
-    salary      int
-    bonus       int
-    firstName   string
-    lastName    string
-  	email       string
+    salary      Int
+    bonus       Int
+    firstName   String
+    lastName    String
+  	email       String
 }
 @check(salary < bonus) // Custom check
 ```
@@ -1512,11 +1539,11 @@ Example:
 
 ```groovy
 model Employee {
-    salary      int     @check(salary < AVG(salary) * 1.5) // Cap salary
-    bonus       int
-    firstName   string
-    lastName    string
-  	email       string
+    salary      Int     @check(salary < AVG(salary) * 1.5) // Cap salary
+    bonus       Int
+    firstName   String
+    lastName    String
+  	email       String
 }
 ```
 
@@ -1533,10 +1560,10 @@ Prisma could support expressions in generators:
 
 ```groovy
 model User {
-  name             string
-  age              int
-  someRandomField  string  @default(fmt("%s is %s years old", this.name, this.age))
-  ageInDays        int     @default(this.age * 365)
+  name             String
+  age              Int
+  someRandomField  String  @default(fmt("%s is %s years old", this.name, this.age))
+  ageInDays        Int     @default(this.age * 365)
 }
 ```
 
@@ -1565,24 +1592,24 @@ Cascading can be enabled on either side, but not both:
 
 ```groovy
 model Blog {
-  id     int @primary
+  id     Int @primary
   author Writer @onDelete(CASCADE)
 }
 
 model Writer {
-  id   int @primary
+  id   Int @primary
   blog Blog?
 }
 ```
 
 ```groovy
 model Blog {
-  id     int @primary
+  id     Int @primary
   author Writer
 }
 
 model Writer {
-  id   int @primary
+  id   Int @primary
   blog Blog? @onDelete(CASCADE)
 }
 ```
@@ -1591,12 +1618,12 @@ This would return an error:
 
 ```groovy
 model Blog {
-  id int @primary
+  id Int @primary
   author Writer @onDelete: CASCADE
 }
 
 model Writer {
-  id   int @primary
+  id   Int @primary
   blog Blog? @onDelete: CASCADE
 }
 ```
@@ -1607,12 +1634,12 @@ Cascading can be enabled on the parent side only:
 
 ```groovy
 model Blog {
-  id     int @primary
+  id     Int @primary
   author Writer
 }
 
 model Writer {
-  id   int @primary
+  id   Int @primary
   blog Blog? @onDelete(CASCADE)
 }
 ```
@@ -1621,12 +1648,12 @@ This would return an error:
 
 ```groovy
 model Blog {
-  id     int @primary
+  id     Int @primary
   author Writer @onDelete(CASCADE)
 }
 
 model Writer {
-  id   int @primary
+  id   Int @primary
   blog Blog?
 }
 ```
@@ -1720,9 +1747,9 @@ Given that, I propose:
 
 ```groovy
 model Teammate {
-  id          int       @primary
-  team_id     string    @onUpdate(cascade())
-  slack_id    string
+  id          Int       @primary
+  team_id     String    @onUpdate(cascade())
+  slack_id    String
   created_at  datetime
   updated_at  datetime
 
@@ -1736,11 +1763,11 @@ that operates on fields and then we could do:
 
 ```groovy
 model Teammate {
-  id          int       @primary
-  team_id     string    @onUpdate(cascade())
-  slack_id    string
+  id          Int       @primary
+  team_id     String    @onUpdate(cascade())
+  slack_id    String
   created_at  datetime
-  updated_at  datetime  @onUpdate(autoupdate())
+  updated_at  Datetime  @onUpdate(autoupdate())
 
 }
 @onDelete(team_id, cascade())
@@ -1792,10 +1819,10 @@ represent this indices.
 
 ```groovy
 model Post {
-  id         int       @primary
-  title      string
+  id         Int       @primary
+  title      String
   published  datetime
-  text       string
+  text       String
   author     user
 }
 @postgres.fuzzy(text, title)
@@ -1890,19 +1917,19 @@ Inheritance in the datamodel is declared by an `extends` clause:
 
 ```groovy
 model LivingBeing {
-  id int @primary
-  dateOfBirth datetime @default(now())
+  id Int @primary
+  dateOfBirth Datetime @default(now())
 }
 
 model Human {
   LivingBeing(id)
-  firstName string
-  lastName string
+  firstName String
+  lastName String
 }
 
 model Pet {
   LivingBeing(id)
-  nickname string
+  nickname String
   owner Human
 }
 
@@ -2051,32 +2078,32 @@ Interfaces can be declared using the `Interface` keyword and used using the
 
 ```groovy
 interface IDatabase {
-  storageSize    int
+  storageSize    Int
 }
 
 interface IMessageQueue {
-    capacity    int
+    capacity    Int
 }
 
 type Kafka {
   IMessageQueue
 
-  capacity    int
-  serverName  string
+  capacity    Int
+  serverName  String
 }
 
 type PostGres {
   IDatabase
-  storageSize  int
-  serverName   string
+  storageSize  Int
+  serverName   String
 }
 
 type Prisma {
   IDatabase
   IMessageQueue
 
-  storageSize  int
-  capacity     int
+  storageSize  Int
+  capacity     Int
 }
 ```
 
@@ -2146,15 +2173,15 @@ e.g. Is this possible?
 
 ```groovy
 model User {
-  id        int           @primary
+  id        Int           @primary
   customer  Customer(id)?
-  name      string
+  name      String
 }
 
 model Customer {
-  id       int   @primary
+  id       Int   @primary
   user     User
-  address  string
+  address  String
 }
 ```
 
@@ -2162,15 +2189,15 @@ Or is it always:
 
 ```groovy
 model User {
-  id        int           @primary
+  id        Int           @primary
   customer  Customer(id)?
-  name      string
+  name      String
 }
 
 model Customer {
-  id       int    @primary
+  id       Int    @primary
   user     User?
-  address  string
+  address  String
 }
 ```
 
@@ -2212,12 +2239,12 @@ If there's value we need to be able to declare this:
 
 ```groovy
 model User {
-  id     int
+  id     Int
   posts  Post[]
 }
 
 model Post {
-  id     int
+  id     Int
   users  User[]
 }
 ```
@@ -2294,8 +2321,8 @@ the default for datamodel 2.
 
 ```groovy
 model users {
-  id          int
-  first_name  string
+  id          Int
+  first_name  String
 }
 
 model posts {
@@ -2347,7 +2374,7 @@ and universal, but "upgrade" the type for databases that support it.
 
 ```groovy
 model User {
-  id  string  @as(postgres.UUID) @as(mongo.ObjectID)
+  id  String  @as(postgres.UUID) @as(mongo.ObjectID)
 }
 ```
 
@@ -2357,7 +2384,7 @@ The DM2 proposal proposes:
 
 ```groovy
 model User {
-  id int (id)
+  id Int (id)
 }
 ```
 
@@ -2404,8 +2431,8 @@ The new syntax will look like this:
 
 ```groovy
 model Post {
-  id     int     @primary
-  title  string
+  id     Int     @primary
+  title  String
   author Author
 }
 // unique composite
@@ -2464,8 +2491,8 @@ The new syntax resolves multi-line issues without needing commas.
 
 ```groovy
 model Post {
-  id     int     @primary
-  title  string
+  id     Int     @primary
+  title  String
   author Author
 }
 // unique composite
@@ -2491,10 +2518,10 @@ To give an example of where this is tricky:
 
 ```groovy
 model Post {
-  id  string  @attr1
+  id  String  @attr1
               @attr2
   @attr3
-  name string
+  name String
 }
 ```
 
@@ -2503,10 +2530,10 @@ disambiguate in this case I found this syntax to be acceptable:
 
 ```groovy
 model Post {
-  id  string  @attr1,
+  id  String  @attr1,
               @attr2
   @attr3
-  name string
+  name String
 }
 ```
 
@@ -2514,10 +2541,10 @@ We could also use different syntax for model attributes:
 
 ```groovy
 model Post {
-  id  string  @attr1
+  id  String  @attr1
               @attr2
   attr3()
-  name string
+  name String
 }
 ```
 
@@ -2525,12 +2552,12 @@ Or perhaps group the field attributes:
 
 ```groovy
 model Post {
-  id  string  [
+  id  String  [
                 @attr1
                 @attr2
               ]
   @attr3
-  name string
+  name String
 }
 ```
 
@@ -2626,8 +2653,8 @@ model Post {
   name("posts")
   generate("js")
 
-  id     int     primary
-  title  string
+  id     Int     primary
+  title  String
   author User
 
   unique(title, author)
@@ -2749,14 +2776,14 @@ proposed syntax (e.g. enums and type aliases):
 type Numeric = postgres.Numeric(5, 2)
 
 model Customer {
-  id       int     @primary
+  id       Int     @primary
   weight   Numeric
   gateway  Gateway
 }
 
 enum Gateway {
-  PAYPAL string,
-  STRIPE string
+  PAYPAL String,
+  STRIPE String
 }
 ```
 
@@ -2968,14 +2995,14 @@ model User {
     db = "people"
   }
 
-  id          int       primary postgres.@serial start_at(100)
-  first_name  string
-  last_name   string
-  email       string    unique
+  id          Int       primary postgres.@serial start_at(100)
+  first_name  String
+  last_name   String
+  email       String    unique
   posts       Posts[]
   accounts    Accounts
-  created_at  datetime  default(now)
-  updated_at  datetime  default(now)
+  created_at  Datetime  default(now)
+  updated_at  Datetime  default(now)
 
   unique(first_name, last_name)
   before_update(updated_at, autoupdate())
@@ -2986,14 +3013,14 @@ embed Accounts {
 }
 
 enum AccountProviders {
-  GOOGLE    string
-  TWITTER   string
-  FACEBOOK  string
+  GOOGLE    String
+  TWITTER   String
+  FACEBOOK  String
 }
 
 model Post {
-  slug   string
-  title  string
+  slug   String
+  title  String
 
   primary(slug, created_at)
 }
@@ -3061,14 +3088,14 @@ his suggestion for changing `@` to `(...)`
 
 ```groovy
 model User {
-  id        int                     @primary
+  id        Int                     @primary
   customer  Customer(id, address)?
-  name      string
+  name      String
 }
 
 model Customer {
-  id       int                      @primary
-  email    string
+  id       Int                      @primary
+  email    String
   gateway  Gateway
   user     User?
 
@@ -3076,8 +3103,8 @@ model Customer {
 }
 
 enum Gateway {
-  PAYPAL string,
-  STRIPE string
+  PAYPAL String,
+  STRIPE String
 }
 ```
 
@@ -3086,14 +3113,14 @@ It'd also be familiar to SQL folks and would allow us to do
 
 ```groovy
 model User {
-  id        int                    @primary
+  id        Int                    @primary
   customer  Customer(id_address)?
-  name      string
+  name      String
 }
 
 model Customer {
-  id       int                     @primary
-  address  string
+  id       Int                     @primary
+  address  String
   user     User?
 
   unique(id, address)  alias("id_address")
@@ -3121,13 +3148,13 @@ Instead of this:
 
 ```groovy
 model User {
-  id             int              @primary
+  id             Int              @primary
   role           Role
 }
 
 enum Role {
-  USER  string   // unless explicit, defaults to "USER"
-  ADMIN string  @default("A")
+  USER  String   // unless explicit, defaults to "USER"
+  ADMIN String  @default("A")
 }
 ```
 
@@ -3135,13 +3162,13 @@ We'd do this:
 
 ```groovy
 model User {
-  id             int              @primary
+  id             Int              @primary
   role           role
 }
 
 enum role {
-  USER  string // unless explicit, defaults to "USER"
-  ADMIN string @default("A")
+  USER  String // unless explicit, defaults to "USER"
+  ADMIN String @default("A")
 }
 ```
 
@@ -3183,13 +3210,13 @@ This would be pretty radical, but it actually reads well in English!
 
 ```groovy
 Post model {
-  id     string  @primary
-  title  string
+  id     String  @primary
+  title  String
 }
 
 Role enum {
-  PUBLISHED  string
-  DRAFT      string
+  PUBLISHED  String
+  DRAFT      String
 }
 ```
 
@@ -3301,13 +3328,13 @@ the syntax be
 **An Assignment**
 
 ```
-type Numeric = int @as(postgres.Numeric(5,2))
+type Numeric = Int @as(postgres.Numeric(5,2))
 ```
 
 **Or a Definition**
 
 ```
-type Numeric int @as(postgres.Numeric(5,2))
+type Numeric Int @as(postgres.Numeric(5,2))
 ```
 
 Go uses the later as a Definition and the former as purely an alias to a Type
@@ -3321,8 +3348,8 @@ This makes me think that we should pick one or the other but not both.
 ```groovy
 model Post {
   db = "posts"
-  slug        string
-  created_at  datetime  @default(now())
+  slug        String
+  created_at  Datetime  @default(now())
 }
 @primary(slug, created_at)
 ```
@@ -3333,8 +3360,8 @@ outside looks better.
 
 ```groovy
 model Post {
-  slug        string
-  created_at  datetime  @default(now())
+  slug        String
+  created_at  Datetime  @default(now())
 }
 @db("posts")
 @primary(slug, created_at)
@@ -3345,8 +3372,8 @@ model Post {
 ```groovy
 model Post {
   db = "posts"
-  slug        string
-  created_at  datetime  @default(now())
+  slug        String
+  created_at  Datetime  @default(now())
   primary(slug, created_at)
 }
 ```
@@ -3375,8 +3402,8 @@ model Post {
     db = "posts"
   }
 
-  slug           string
-  custom_fields  json      @default({
+  slug           String
+  custom_fields  Json      @default({
                              some    = "key"
                              another = "key"
                            })
@@ -3405,8 +3432,8 @@ model Post {
     db: "posts"
   }
 
-  slug           string
-  custom_fields  json      @default({
+  slug           String
+  custom_fields  Json      @default({
                                 some: "key"
                              another: "key"
                            })
@@ -3419,12 +3446,12 @@ This is very minor, but given this syntax:
 
 ```groovy
 model Writer {
-  id      int        @primary
+  id      Int        @primary
   blogs   Blog[]?
 }
 
 model Blog {
-  id      int        @primary
+  id      Int        @primary
 }
 ```
 
@@ -3433,12 +3460,12 @@ into:
 
 ```groovy
 model Writer {
-  id      int        @primary
+  id      Int        @primary
   blogs   Blog[]
 }
 
 model Blog {
-  id         int         @primary
+  id         Int         @primary
   writer_id  Writer(id)?
 }
 ```
@@ -3447,12 +3474,12 @@ It'd be more consistent if it did:
 
 ```groovy
 model Writer {
-  id      int        @primary
+  id      Int        @primary
   blogs   Blog[]?
 }
 
 model Blog {
-  id         int         @primary
+  id         Int         @primary
   writer_id  Writer(id)?
 }
 ```
@@ -3461,12 +3488,12 @@ And required implicit blogs:
 
 ```groovy
 model Writer {
-  id      int        @primary
+  id      Int        @primary
   blogs   Blog[]
 }
 
 model Blog {
-  id         int         @primary
+  id         Int         @primary
   writer_id  Writer(id)?
 }
 ```
@@ -3475,12 +3502,12 @@ Resulted in:
 
 ```groovy
 model Writer {
-  id      int        @primary
+  id      Int        @primary
   blogs   Blog[]
 }
 
 model Blog {
-  id         int         @primary
+  id         Int         @primary
   writer_id  Writer(id)?
 }
 ```
