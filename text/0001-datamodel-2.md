@@ -521,6 +521,148 @@ storage engine type.
 
 See https://github.com/prisma/prisma/issues/1753
 
+Not everything in core is perfectly backed by the database, but I think
+exceptions can be made where it's still a valuable concept.
+
+I'd like to propose we test against a basic JSON storage file to iterate on our
+assumptions. Particularly around non-prisma clients writing invalid data to the
+JSON file (e.g. writing a negative value to a uint field), and how we can do
+comparisions in the cases where the database doesn't back it (e.g.
+`amount > 10`, when amount is a byte array).
+
+| Type    | Description               | Postgres         | MySQL             |
+| ------- | ------------------------- | ---------------- | ----------------- |
+| String  | Var-length UTF-8 or ASCII | text             | TEXT              |
+| Boolean | 8 bit true or false       | boolean          | BOOLEAN           |
+| Int     | DB-dependent integer      | integer          | INT               |
+| Int8    | 8 bit signed integer      | "char" [2]       | TINYINT           |
+| Int16   | 16 bit signed integer     | smallint         | SMALLINT          |
+| Int32   | 32 bit signed integer     | integer          | INT               |
+| Int64   | 64 bit signed integer     | bigint           | BIGINT            |
+| Float   | DB-dependent float        | real             | FLOAT             |
+| Float32 | 32 bit signed integer     | real             | FLOAT             |
+| Float64 | 64 bit signed integer     | double precision | DOUBLE            |
+| Uint    | DB-dependent uint         | integer [1]      | UNSIGNED INT      |
+| Uint8   | 8 bit unsigned integer    | _"char" [3]_     | UNSIGNED TINYINT  |
+| Uint16  | 16 bit unsigned integer   | smallint [1]     | UNSIGNED SMALLINT |
+| Uint32  | 32 bit unsigned integer   | integer [1]      | UNSIGNED INT      |
+| Uint64  | 64 bit unsigned integer   | bytea _N/A_      | UNSIGNED BIGINT   |
+| Byte    | Should be alias for Uint8 | _"char" [3]_     | BINARY [4]        |
+| Byte[]  | Var-length byte-array     | bytea            | VARBINARY         |
+
+**DB-dependent Types:**
+
+- "I'm not a performance sensitive app and I don't care exactly how you store it
+  for me under the hood"
+
+**Interesting Realization:** All data types (in all languages) are simply a
+[message format](https://1.bp.blogspot.com/-9Y7XFhNO0RU/Uwb1CF5vPqI/AAAAAAAAAs8/3q412EraA-g/s1600/TCP-Header.bmp)
+of how the bits are arranged. Concretely, this means that a Byte is the same as
+an Uint8, since there is no format for a Uint8, it's just 8 bits. What this may
+mean is that we can _polyfill_ unsupported features by interacting them at a
+lower-level (`bytea`, `BINARY`, `BLOB`). For data sources that don't have
+low-level primitives, we may by able to cast between types.
+
+- [1] Postgres doesn't natively support uints, but there are
+  [a few workarounds](https://stackoverflow.com/questions/20810134/why-unsigned-integer-is-not-available-in-postgresql).
+  These workarounds will be imperfect around the edges of `Uint.MAX`.
+- [2] Internal postgres type
+- [3] Can be stored but not a perfect fit. As 1-byte, we'd do this:
+  https://stackoverflow.com/a/49353367/145435. If a non-prisma client inserts a
+  negative value, prisma would break or return a garbage value.
+- [4] UNSIGNED TINYINT and BINARY seem equalivent in that they're both 1-byte (8
+  bits). I think they differ in what types are accepted and how it's returned,
+  but I need to research this more. UNSIGNED TINYINT isn't a SQL standard, but
+  is implemented in MYSQL
+
+| Type    | SQLite       | Mongo      | _JSON [9]_ |
+| ------- | ------------ | ---------- | ---------- |
+| String  | TEXT         | string     | string     |
+| Boolean | INTEGER[5]   | bool       | boolean    |
+| Int     | INTEGER[5]   | int32[6]   | number     |
+| Int8    | INTEGER[5]   | int32[6]   | number     |
+| Int16   | INTEGER[5]   | int32[6]   | number     |
+| Int32   | INTEGER[5]   | int32      | number     |
+| Int64   | INTEGER[5]   | int64      | number     |
+| Float   | REAL         | double     | number     |
+| Float32 | REAL[6]      | double[6]  | number     |
+| Float64 | REAL         | double     | number     |
+| Uint    | _INTEGER[7]_ | uint64     | number     |
+| Uint8   | _INTEGER[7]_ | uint64[6]  | number     |
+| Uint16  | _INTEGER[7]_ | uint64[6]  | number     |
+| Uint32  | _INTEGER[7]_ | uint64[6]  | number     |
+| Uint64  | _N/A_        | uint64     | number     |
+| Byte    | _BLOB[8]_    | binData[6] | string[10] |
+| Byte[]  | BLOB         | binData    | string[10] |
+
+> https://www.sqlite.org/draft/datatype3.html
+
+> Mongo:
+>
+> http://bsonspec.org/spec.html &
+> https://docs.mongodb.com/manual/reference/bson-types/
+
+- [5] INTEGER is a signed integer stored in 1, 2, 3, 4, 6, or 8 bytes depending
+  on the magnitude of the value. We don't have a proper core type for 3-byte or
+  6-byte values, but we can upcast to 4-byte and 8-byte.
+- [6] We're overfitting here. There isn't a 32-bit float, there is only a
+  64-bit. This should work fine since we're not losing any information by going
+  from 32-bit to 64-bit.
+- [7] Can be stored but not a perfect fit. If all the clients are Prisma, it's
+  fine. If a non-prisma client inserts a negative value, Prisma would break or
+  return a garbage value.
+- [8] Can be stored but not a perfect fit. If all the clients are Prisma, it's
+  fine. If a non-prisma client inserts more than 1 byte, the database would
+  allow it. In this case, I propose we return the first byte from the result.
+- [9] JSON as a storage file. I think this might be a good testbed for testing
+  our assumptions about where things would break.
+- [10] Could be stored either as base64 encoded string or sequence of hex values
+  `\x00\x01`...
+
+> TODO: FINISH ME
+
+| Type    | MariaDB | Elastic |     | GSheets |
+| ------- | ------- | ------- | --- | ------- |
+| String  |         |         |     |         |
+| Boolean |         |         |     |         |
+| Int     |         |         |     |         |
+| Int8    |         |         |     |         |
+| Int16   |         |         |     |         |
+| Int32   |         |         |     |         |
+| Int64   |         |         |     |         |
+| Float   |         |         |     |         |
+| Uint    |         |         |     |         |
+| Uint8   |         |         |     |         |
+| Uint16  |         |         |     |         |
+| Uint32  |         |         |     |         |
+| Uint64  |         |         |     |         |
+| Byte    |         |         |     |         |
+| Byte[]  |         |         |     |         |
+
+| Type    | JS  | TS  | Python | Go  | Java |
+| ------- | --- | --- | ------ | --- | ---- |
+| String  |     |     |        |     |      |
+| Boolean |     |     |        |     |      |
+| Int     |     |     |        |     |      |
+| Int8    |     |     |        |     |      |
+| Int16   |     |     |        |     |      |
+| Int32   |     |     |        |     |      |
+| Int64   |     |     |        |     |      |
+| Float   |     |     |        |     |      |
+| Uint    |     |     |        |     |      |
+| Uint8   |     |     |        |     |      |
+| Uint16  |     |     |        |     |      |
+| Uint32  |     |     |        |     |      |
+| Uint64  |     |     |        |     |      |
+| Byte    |     |     |        |     |      |
+| Byte[]  |     |     |        |     |      |
+
+We will use the default implementation of `Int` wherever possible.
+
+| GraphQL | MySQL                                | Elastic Search | MongoDB       | PostgreS                      |
+| :------ | ------------------------------------ | -------------- | ------------- | ----------------------------- |
+| Int     | SMALLINT, MEDIUMINT, **INT**, BIGINT | integer        | **int**, long | smallint, **integer**, bigint |
+
 #### Float
 
 Our `float` primitive type is implemented as
