@@ -516,10 +516,8 @@ to manage environment differences inside environment variables.
 
 ### Primitive Types
 
-Prisma 1.x lacks some primitive types. Other types are mapping to the wrong
-storage engine type.
-
-See https://github.com/prisma/prisma/issues/1753
+The Primitive types are based on a combination of Protocol Buffers and Go's Type
+system.
 
 Not everything in core is perfectly backed by the database, but I think
 exceptions can be made where it's still a valuable concept.
@@ -621,6 +619,8 @@ low-level primitives, we may by able to cast between types.
 
 > TODO: FINISH ME
 
+**Exotic Databases**
+
 | Type    | MariaDB | Elastic |     | GSheets |
 | ------- | ------- | ------- | --- | ------- |
 | String  |         |         |     |         |
@@ -638,6 +638,8 @@ low-level primitives, we may by able to cast between types.
 | Uint64  |         |         |     |         |
 | Byte    |         |         |     |         |
 | Byte[]  |         |         |     |         |
+
+**Clients**
 
 | Type    | JS  | TS  | Python | Go  | Java |
 | ------- | --- | --- | ------ | --- | ---- |
