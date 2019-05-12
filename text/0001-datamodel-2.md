@@ -58,7 +58,7 @@ on a syntax we can all get behind.
 - Adjust many-to-many convention `BlogToWriter` to `BlogsWriters`
 - Prefix embedded embeds with `embed`
 - introduce `@as` for type specifications
-- rename `bool` to `bool`
+- rename `bool` to `Boolean`
 
 ## Basic Example
 
@@ -69,7 +69,7 @@ postgres_url = env("POSTGRES_URL")
 mongo_url    = env("MONGO_URL")
 
 // postgres datasource
-source postgres {
+source pg {
   type    = "postgres"
   url     = postgres_url
   default = true
@@ -94,7 +94,7 @@ source mgo2 {
 }
 
 // type definition
-type Numeric Decimal = "2.0" @postgres.Numeric(5, 2)
+type Numeric Decimal @default(2.0) @rawType(pg.numeric(5, 2))
 
 enum Color {
   Red  = "RED"
@@ -109,14 +109,14 @@ model User {
 
   // model fields
   id             Int       @primary
-  email          String    @unique  @postgres.Like(".%.com") @as(postgres.Citext)
+  email          String    @unique  @pg.Like(".%.com") @rawType(pg.Citext)
   name           String?   @check(name > 2)
   role           Role
-  profile        Profile?  @alias("my_profile")
+  profile        Profile?  @mapsTo("my_profile")
   createdAt      Datetime  @default(now())
-  updatedAt      Datetime  @onChange(now())
+  updatedAt      Datetime  @updatedAt
 
-  weight         Numeric   @alias("my_weight")
+  weight         Numeric   @mapsTo("my_weight")
   posts          Post[]
 
 
@@ -146,7 +146,7 @@ model Profile {
 
 // named embed (reusable)
 embed Photo {
-  id   String    @as(mgo2.ObjectID)
+  id   String    @rawType(mgo2.ObjectID)
   url  String
 
   // anonymous embed (optional)
@@ -173,10 +173,10 @@ model Post {
   title      String
   author     User(id)
   reviewer   User(id)
-  published  bool      @default(false)
+  published  Boolean      @default(false)
 
   createdAt  Datetime  @default(now())
-  updatedAt  Datetime  @onChange(now())
+  updatedAt  Datetime  @updatedAt
 
   categories CategoriesPosts[]
 }
@@ -232,7 +232,7 @@ database, a file format or even a web service.
 
 Prisma provides a set of core primitives:
 
-- Primitive Types (string, int, float, bool)
+- Primitive Types (string, int, float, Boolean)
 - Type Definitions (model, embed, enum, type)
 - Relations
 - Generators
@@ -527,6 +527,19 @@ system.
 Not everything in core is perfectly backed by the database, but I think
 exceptions can be made where it's still a valuable concept.
 
+There are a number of **Datasource dependent types**. **Datasource dependent
+types** may change the underlying storage depending on the datasource. If you're
+a performant sensitive application or you need to have low-level configuration
+of how you're data is stored these types should be avoided.
+
+| Type    | Description                         |
+| ------- | ----------------------------------- |
+| String  | Variable length UTF-8 or ASCII text |
+| Boolean | 1 byte `x01` or `x00` value         |
+| Int     | Number                              |
+| Float   | Decimal number (imprecise)          |
+| Uint    | Decimal number (imprecise)          |
+
 I'd like to propose we test against a basic JSON storage file to iterate on our
 assumptions. Particularly around non-prisma clients writing invalid data to the
 JSON file (e.g. writing a negative value to a uint field), and how we can do
@@ -546,11 +559,11 @@ comparisions in the cases where the database doesn't back it (e.g.
 | Float32 | 32 bit signed integer     | real             | FLOAT             |
 | Float64 | 64 bit signed integer     | double precision | DOUBLE            |
 | Uint    | DB-dependent uint         | integer [1]      | UNSIGNED INT      |
-| Uint8   | 8 bit unsigned integer    | _"char" [3]_     | UNSIGNED TINYINT  |
+| Uint8   | 8 bit unsigned integer    | **"char"** [3]   | UNSIGNED TINYINT  |
 | Uint16  | 16 bit unsigned integer   | smallint [1]     | UNSIGNED SMALLINT |
 | Uint32  | 32 bit unsigned integer   | integer [1]      | UNSIGNED INT      |
-| Uint64  | 64 bit unsigned integer   | bytea _N/A_      | UNSIGNED BIGINT   |
-| Byte    | Should be alias for Uint8 | _"char" [3]_     | BINARY [4]        |
+| Uint64  | 64 bit unsigned integer   | **N/A**          | UNSIGNED BIGINT   |
+| Byte    | Should be alias for Uint8 | **"char"** [3]   | BINARY [4]        |
 | Byte[]  | Var-length byte-array     | bytea            | VARBINARY         |
 
 **DB-dependent Types:**
@@ -578,25 +591,25 @@ low-level primitives, we may by able to cast between types.
   but I need to research this more. UNSIGNED TINYINT isn't a SQL standard, but
   is implemented in MYSQL
 
-| Type    | SQLite       | Mongo      | _JSON [9]_ |
-| ------- | ------------ | ---------- | ---------- |
-| String  | TEXT         | string     | string     |
-| Boolean | INTEGER[5]   | bool       | boolean    |
-| Int     | INTEGER[5]   | int32[6]   | number     |
-| Int8    | INTEGER[5]   | int32[6]   | number     |
-| Int16   | INTEGER[5]   | int32[6]   | number     |
-| Int32   | INTEGER[5]   | int32      | number     |
-| Int64   | INTEGER[5]   | int64      | number     |
-| Float   | REAL         | double     | number     |
-| Float32 | REAL[6]      | double[6]  | number     |
-| Float64 | REAL         | double     | number     |
-| Uint    | _INTEGER[7]_ | uint64     | number     |
-| Uint8   | _INTEGER[7]_ | uint64[6]  | number     |
-| Uint16  | _INTEGER[7]_ | uint64[6]  | number     |
-| Uint32  | _INTEGER[7]_ | uint64[6]  | number     |
-| Uint64  | _N/A_        | uint64     | number     |
-| Byte    | _BLOB[8]_    | binData[6] | string[10] |
-| Byte[]  | BLOB         | binData    | string[10] |
+| Type    | SQLite         | Mongo      | _JSON [9]_ |
+| ------- | -------------- | ---------- | ---------- |
+| String  | TEXT           | string     | string     |
+| Boolean | INTEGER[5]     | bool       | boolean    |
+| Int     | INTEGER[5]     | int32[6]   | number     |
+| Int8    | INTEGER[5]     | int32[6]   | number     |
+| Int16   | INTEGER[5]     | int32[6]   | number     |
+| Int32   | INTEGER[5]     | int32      | number     |
+| Int64   | INTEGER[5]     | int64      | number     |
+| Float   | REAL           | double     | number     |
+| Float32 | REAL[6]        | double[6]  | number     |
+| Float64 | REAL           | double     | number     |
+| Uint    | **INTEGER[7]** | uint64     | number     |
+| Uint8   | **INTEGER[7]** | uint64[6]  | number     |
+| Uint16  | **INTEGER[7]** | uint64[6]  | number     |
+| Uint32  | **INTEGER[7]** | uint64[6]  | number     |
+| Uint64  | **N/A**        | uint64     | number     |
+| Byte    | **BLOB[8]**    | binData[6] | string[10] |
+| Byte[]  | BLOB           | binData    | string[10] |
 
 > https://www.sqlite.org/draft/datatype3.html
 
@@ -626,43 +639,47 @@ low-level primitives, we may by able to cast between types.
 
 **Exotic Databases**
 
-| Type    | MariaDB | Elastic |     | GSheets |
-| ------- | ------- | ------- | --- | ------- |
-| String  |         |         |     |         |
-| Boolean |         |         |     |         |
-| Int     |         |         |     |         |
-| Int8    |         |         |     |         |
-| Int16   |         |         |     |         |
-| Int32   |         |         |     |         |
-| Int64   |         |         |     |         |
-| Float   |         |         |     |         |
-| Uint    |         |         |     |         |
-| Uint8   |         |         |     |         |
-| Uint16  |         |         |     |         |
-| Uint32  |         |         |     |         |
-| Uint64  |         |         |     |         |
-| Byte    |         |         |     |         |
-| Byte[]  |         |         |     |         |
+| Type    | MariaDB | Elastic | GSheets |
+| ------- | ------- | ------- | ------- |
+| String  |         |         |         |
+| Boolean |         |         |         |
+| Int     |         |         |         |
+| Int8    |         |         |         |
+| Int16   |         |         |         |
+| Int32   |         |         |         |
+| Int64   |         |         |         |
+| Float   |         |         |         |
+| Float32 |         |         |         |
+| Float64 |         |         |         |
+| Uint    |         |         |         |
+| Uint8   |         |         |         |
+| Uint16  |         |         |         |
+| Uint32  |         |         |         |
+| Uint64  |         |         |         |
+| Byte    |         |         |         |
+| Byte[]  |         |         |         |
 
 **Clients**
 
-| Type    | JS  | TS  | Python | Go  | Java |
-| ------- | --- | --- | ------ | --- | ---- |
-| String  |     |     |        |     |      |
-| Boolean |     |     |        |     |      |
-| Int     |     |     |        |     |      |
-| Int8    |     |     |        |     |      |
-| Int16   |     |     |        |     |      |
-| Int32   |     |     |        |     |      |
-| Int64   |     |     |        |     |      |
-| Float   |     |     |        |     |      |
-| Uint    |     |     |        |     |      |
-| Uint8   |     |     |        |     |      |
-| Uint16  |     |     |        |     |      |
-| Uint32  |     |     |        |     |      |
-| Uint64  |     |     |        |     |      |
-| Byte    |     |     |        |     |      |
-| Byte[]  |     |     |        |     |      |
+| Type    | JS / TS     | Python | Go      | Java |
+| ------- | ----------- | ------ | ------- | ---- |
+| String  | string      |        | string  |      |
+| Boolean | boolean     |        | bool    |      |
+| Int     | int         |        | int     |      |
+| Int8    | int         |        | int8    |      |
+| Int16   | int         |        | int16   |      |
+| Int32   | int         |        | int32   |      |
+| Int64   | **TODO**    |        | int64   |      |
+| Float   | float       |        | float32 |      |
+| Float32 | float       |        | float32 |      |
+| Float64 | **TODO**    |        | float64 |      |
+| Uint    | **TODO**    |        | uint    |      |
+| Uint8   | **TODO**    |        | uint8   |      |
+| Uint16  | **TODO**    |        | uint16  |      |
+| Uint32  | **TODO**    |        | uint32  |      |
+| Uint64  | **TODO**    |        | uint64  |      |
+| Byte    | **TODO**    |        | byte    |      |
+| Byte[]  | ArrayBuffer |        | []byte  |      |
 
 We will use the default implementation of `Int` wherever possible.
 
@@ -1080,7 +1097,7 @@ model Writer {
 model BlogsWriters {
   blog      Blog(id)
   author    Writer(id)
-  is_owner  bool
+  is_owner  Boolean
 }
 // enforce a composite unique
 @unique(author, blog)
@@ -1314,53 +1331,59 @@ create a custom type to encapsulate constraints or other configuration in a
 reusable type. Implementers of connectors can declare primitive types that work
 only in the context of that connector.
 
-#### User-defined
+#### Connectors Bring Custom Types
 
-If you have a certain field configuration that is used in multiple places, it
-can be convenient to create a custom type instead of repeating the
-configuration. This also ensures that all uses are in sync.
+In order to live up to our promise of not tailoring Prisma to the lowest-common
+database feature-set, connectors will bring their own datatypes and capabilities
+to the datamodel.
+
+This will make your datamodel less universal, but more capable for the database
+you're using.
 
 ```groovy
-type Email String @check.regexp(".*.com")
-
-// Without custom type
-model User {
-  email  String  @check.regexp(".*.com")
+datasource pg {
+  from = "postgres"
+  url  = "postgres://localhost:5432/jack"
+  sslMode = false
 }
 
-// With custom type
-model User {
-  email  Email
+type PGCitext String @rawType(pg.Citext)
+type PGUUID String @rawType(pg.UUID)
+type PGPoint embed {
+  X Int
+  Y Int
+} @rawType(pg.Point)
+
+datasource ms {
+  from = "mysql"
+  url  = "mysql://localhost:5522/jack"
 }
 
-// With additional field config
+// MySQL exports a point but it's a different
+// from Postgres. We'll probably need namespacing
+// or use the raw exported type.
+type MSPoint embed {
+  X Int
+  Y Int
+  Z Int
+} @rawType(ms.Point)
+
 model User {
-  email  Email  @as(postgres.varchar(250))
+  id         UUID
+  email      Citext
+  location1  MSPoint
+  location2  PGPoint
 }
 ```
 
-> A user-defined primitive type is a collection of field configurations that can
-> be extended at place of use.
+> TODO: decide on syntax. do we need `embed`? If we need to namespace anyway to
+> avoid conflicts with existing connectors, could we just use `embed`?
 
-#### Connector-defined
+**Introspection Algorithm**
 
-When implementing a connector it might be necessary to augment Prisma with types
-that are not already part of the built-in primitive types. For example, a legacy
-database might have a special string type that support emoji, but does not
-support indexing. The connector could introduce a new primitive type to expose
-this type:
-
-```groovy
-type EmojiString String
-```
-
-Prisma users can then use it in their datamodel like this:
-
-```groovy
-model User {
-  displayName EmojiString
-}
-```
+Introspection will lookup the models and fields from the datasource. It will map
+known types to Prisma's core primitive types. For complex types, it will bring
+in type definitions into our Datamodel.
 
 Connector implementors can rely on Prisma for certain validations if they don't
 need custom error messages. Any extra field configuration will work exactly the
@@ -1372,24 +1395,32 @@ standard error message without calling the connector:
 type EmojiString String @check.lengthLessThan(1000)
 ```
 
-> TODO: try and map out check constraints, it's really weird in this case.
+> TODO: @sorens, I'm not sure what you mean here about "custom error messages".
 
-> TODO: this feels like it could be combined with type specification.
+#### User-defined
 
-#### Connector-defined complex types
-
-A conenctor might also want to introduce a complex type. For example a custom
-connector for a legacy SOAP API could introduce a complex type that is
-transparently mapped to a bitmap:
+You can also define your own types so they can be used in multiple places. It
+can be convenient to create a custom type instead of repeating the
+configuration. This also ensures that all uses are in sync.
 
 ```groovy
-embed UserSettingBitmap {
-	sendEmail   bool
-	showVideos  bool
+type Email String @check(regexp(".*.com"))
+
+// Without custom type
+model User {
+  email  String  @check(greaterThan(5))
+}
+
+// With custom type
+model User {
+  email  Email
+}
+
+// With additional field config
+model User {
+  email  Email  @rawType(postgres.varchar(250))
 }
 ```
-
-> TODO: This needs to be mapped out in much greater detail
 
 ## Attributes
 
@@ -1420,9 +1451,9 @@ model User {
 
 Prisma core supports the following model attributes:
 
-- `@check`: Check creates a constraint across the model
+- `@check`: Check creates a constraint across multiple model attributes
 
-Some examples from postgres (not feature complete):
+Some examples from postgres (complete):
 
 - `@postgres.unique(fields...)`: Unique composites
 - `@postgres.primary(fields...)`: Primary key composites
@@ -1434,10 +1465,11 @@ Field attributes apply to a given field. Prisma core supports the following
 field attributes:
 
 - `@primary`: Defines the primary key
-- `@as`: Defines a type specification
-- `@alias`: Defines a type alias to be picked up by the generators
+- `@rawType`: Defined an underlying type
+- `@mapTo`: Defines the raw column name the field is mapped to
 - `@check`: Check creates a single field constraint
 - `@default`: Specifies a default value if null is provided
+- `@updatedAt`: Updates the time to `now()` whenever the model is updated
 
 ### Type specifications
 
@@ -1456,12 +1488,12 @@ source pg {
 }
 
 model User {
-  id           String   @as(pg.char(100))
-  age          Int      @as(pg.smallInt)
-  name         String   @as(pg.varchar(128))
-  height       Float    @as(pg.float4)
-  cashBalance  Decimal  @as(pg.numeric(30, 60))
-  props        Json     @as(pg.mediumText)
+  id           String   @rawType(pg.char(100))
+  age          Int      @rawType(pg.smallInt)
+  name         String   @rawType(pg.varchar(128))
+  height       Float    @rawType(pg.float4)
+  cashBalance  Decimal  @rawType(pg.numeric(30, 60))
+  props        Json     @rawType(pg.mediumText)
 }
 ```
 
@@ -1479,7 +1511,7 @@ source ms {
 }
 
 model User {
-  age Int @as(pg.smallint) @as(ms.smallint)
+  age Int @rawType(pg.smallint) @rawType(ms.smallint)
 }
 ```
 
@@ -1495,7 +1527,7 @@ Datamodel 2 supports the same literal values as HCL2.
 | float          | 1.1               |
 | Decimal        | 1.1               |
 | String         | "some text"       |
-| bool           | true              |
+| Boolean        | true              |
 | datetime       | "2018"            |
 | enum           | SomeEnum          |
 | json           | '{"a":3}'         |
@@ -1538,9 +1570,9 @@ column modifiers respectively:
 
 ```groovy
 model User {
-  id  Int  @as(pg.serial(100, 10))
-           @as(ms.autoIncrement(100, 10))
-           @as(maria.sequence(100, 10))
+  id  Int  @rawType(pg.serial(100, 10))
+           @rawType(ms.autoIncrement(100, 10))
+           @rawType(maria.sequence(100, 10))
 }
 ```
 
@@ -2084,12 +2116,12 @@ model Pet {
 
 model Cat {
   Pet(LivingBeing(id))
-  likesFish bool
+  likesFish Boolean
 }
 
 model Dog {
   Pet(LivingBeing(id))
-  likesFrisbee bool
+  likesFrisbee Boolean
 }
 ```
 
@@ -2293,7 +2325,7 @@ idea as it provides two benefits:
 
 - Link tables are not usually needed right away, but are often good practice
   since you often want to attach metadata to that relation later on (e.g.
-  `can_edit bool`). Some options:
+  `can_edit Boolean`). Some options:
 
 1. We could make them optional at first, but create a table in the background
    (we'd need to do this anyway), but then when they specify the table and
@@ -2523,7 +2555,7 @@ and universal, but "upgrade" the type for databases that support it.
 
 ```groovy
 model User {
-  id  String  @as(postgres.UUID) @as(mongo.ObjectID)
+  id  String  @rawType(postgres.UUID) @rawType(mongo.ObjectID)
 }
 ```
 
@@ -3387,8 +3419,8 @@ Nah.
 
 I've been going back and forth on this one a lot. We have a couple options here:
 
-1. All named arguments @alias(name: "my_weight") @sequence(start:1, step:100)
-2. Optionally named: @alias("my_weight") @sequence(step:100, start:1). Naming
+1. All named arguments @mapsTo(name: "my_weight") @sequence(start:1, step:100)
+2. Optionally named: @mapsTo("my_weight") @sequence(step:100, start:1). Naming
    allows you to specify the arguments in whatever order you want.
 3. No named arguments, VSCode plugin will provide autocomplete signatures.
 4. No named arguments, break up optional attributes when not obvious to be
@@ -3413,8 +3445,8 @@ I've been going back and forth on this one a lot. We have a couple options here:
 > spec that out a bit further imo. How do we handle arguments in directives with
 > multiple arguments? Your suggestion implies that @sequence(100,1) is possible
 > which is not very readable. Therefore i suggest the following rule: Directives
-> with 1 argument may omit the argument name. E.g. @alias("my_weight") and
-> @alias(name:"my_weight") is allowed. Directives with multiple arguments must
+> with 1 argument may omit the argument name. E.g. @mapsTo("my_weight") and
+> @mapsTo(name:"my_weight") is allowed. Directives with multiple arguments must
 > always specify all argument names.
 
 I quite like the rule @marcus proposed and I can definitely be swayed. I think
@@ -3477,13 +3509,13 @@ the syntax be
 **An Assignment**
 
 ```
-type Numeric = Int @as(postgres.Numeric(5,2))
+type Numeric = Int @rawType(postgres.Numeric(5,2))
 ```
 
 **Or a Definition**
 
 ```
-type Numeric Int @as(postgres.Numeric(5,2))
+type Numeric Int @rawType(postgres.Numeric(5,2))
 ```
 
 Go uses the later as a Definition and the former as purely an alias to a Type
@@ -3664,3 +3696,47 @@ model Blog {
 We probably still want an optional Writer by default.
 
 Super minor, I'm not very opinionated on this. Just pointing it out.
+
+## Extending
+
+```groovy
+
+```
+
+## Plugins
+
+1. Access Control with Business Logic
+2. Rate limiting configuration
+3. Specifying custom Admin React Components
+
+- datasource
+- generate
+- admin
+
+```groovy
+migrate migrate {
+  unsafe = env("DEV")
+}
+
+meta = {
+  admin = {
+    ok = 12
+    zzz = ok
+  }
+  admin = {
+    ok = 12
+    zzz = ok
+  }
+}
+
+source pg {
+
+}
+
+generate ts {
+
+}
+
+`@ts.alias("firstName") @go.alias("FirstName")`
+
+```
