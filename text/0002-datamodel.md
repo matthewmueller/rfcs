@@ -203,10 +203,6 @@ core type, it should provide a **best-effort implementation**.
 | Float    | Floating point number |
 | Datetime | Timestamp             |
 
-**TODO: Should we keep Datetime?**
-
-**TODO: Should we add Binary?**
-
 Here's how some of the databases we're tracking map to the core types:
 
 #### Core Data Type to Connector
@@ -227,7 +223,8 @@ Here's how some of the databases we're tracking map to the core types:
 | Float    | REAL    | double | number   |
 | Datetime | _N/A_   | date   | _N/A_    |
 
-_N/A:_ here means no perfect equivalent, but polyfill-able.
+**\_N/A:** here means no perfect equivalent, but we can probably get pretty
+close.
 
 #### Core Data Type to Generator
 
@@ -428,9 +425,6 @@ Underneath:
 | id        | integer |
 | author    | integer |
 
-**TODO:** is `author` an integer in this case? It points to
-`primary_key(title, published)`.
-
 ##### Implicit Many-to-Many (M:N) Relationships
 
 Blogs can have multiple writers and a writer can write many blogs. Prisma
@@ -465,8 +459,6 @@ unique association.
 | ------------------ | ------- |
 | blog               | integer |
 | author             | integer |
-
-**TODO:** Should we remove the inflection here?
 
 For implicit many-to-many relations, you **must** include both `Blog.authors`
 and `Writer.blogs`. If one of these fields is missing, Prisma will assume it's a
@@ -673,8 +665,7 @@ Disambiguates relationships when needed
 - onDelete: _(optional)_ defines what we do when the referenced relation is
   deleted
   - **CASCADE**: also delete this entry
-
-**TODO** are there any more options for `onDelete`? `SET NULL`?
+  - **SET_NULL**: set the field to null
 
 ##### @updatedAt
 
@@ -807,8 +798,7 @@ model Customer {
 }
 ```
 
-**TODO:** How far do we want to take Type Definitions? Do they allow `@unique`?
-Or do they just allow type specifications for now.
+You can attach any field attribute to a type definition.
 
 ## Enum Block
 
@@ -909,9 +899,6 @@ $ prisma deploy
 
 $ POSTGRES_URL="postgres://user:secret@rds.amazon.com:4321/db" prisma deploy
 ```
-
-**TODO:** Does introspect write secrets to the DM or does it autogenerate these
-env blocks?
 
 ### Introspect Behavior
 
