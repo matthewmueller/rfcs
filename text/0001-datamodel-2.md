@@ -94,7 +94,7 @@ source mgo2 {
 }
 
 // type definition
-type Numeric Decimal @default(2.0) @rawType(pg.numeric(5, 2))
+type Numeric Decimal @default(2.0) @pg.numeric(5, 2)
 
 enum Color {
   Red  = "RED"
@@ -109,7 +109,7 @@ model User {
 
   // model fields
   id             Int       @primary
-  email          String    @unique  @pg.Like(".%.com") @rawType(pg.Citext)
+  email          String    @unique  @pg.Like(".%.com") @pg.Citext
   name           String?   @check(name > 2)
   role           Role
   profile        Profile?  @mapsTo("my_profile")
@@ -146,7 +146,7 @@ model Profile {
 
 // named embed (reusable)
 embed Photo {
-  id   String    @rawType(mgo2.ObjectID)
+  id   String    @mgo2.ObjectID
   url  String
 
   // anonymous embed (optional)
@@ -532,13 +532,13 @@ types** may change the underlying storage depending on the datasource. If you're
 a performant sensitive application or you need to have low-level configuration
 of how you're data is stored these types should be avoided.
 
-| Type    | Description                         |
-| ------- | ----------------------------------- |
-| String  | Variable length UTF-8 or ASCII text |
-| Boolean | 1 byte `x01` or `x00` value         |
-| Int     | Number                              |
-| Float   | Decimal number (imprecise)          |
-| Uint    | Decimal number (imprecise)          |
+| Type     | Description                         |
+| -------- | ----------------------------------- |
+| String   | Variable length text                |
+| Boolean  | True or false value                 |
+| Int      | Integer value                       |
+| Float    | Floating point number               |
+| Datetime | Date time                           |
 
 I'd like to propose we test against a basic JSON storage file to iterate on our
 assumptions. Particularly around non-prisma clients writing invalid data to the
@@ -1341,32 +1341,34 @@ This will make your datamodel less universal, but more capable for the database
 you're using.
 
 ```groovy
-datasource pg {
-  from = "postgres"
-  url  = "postgres://localhost:5432/jack"
-  sslMode = false
+connector pg {
+  type = "postgres"
+  url  = "postgres://localhost:5432/jack?sslmode=false"
 }
 
-type PGCitext String @rawType(pg.Citext)
-type PGUUID String @rawType(pg.UUID)
-type PGPoint embed {
+type PGCitext String @pg.Citext
+type PGUUID String @pg.UUID
+
+embed PGPoint {
   X Int
   Y Int
-} @rawType(pg.Point)
+  @@pg.Point
+}
 
-datasource ms {
-  from = "mysql"
+connector ms {
+  type = "mysql"
   url  = "mysql://localhost:5522/jack"
 }
 
 // MySQL exports a point but it's a different
 // from Postgres. We'll probably need namespacing
 // or use the raw exported type.
-type MSPoint embed {
+embed MSPoint {
   X Int
   Y Int
   Z Int
-} @rawType(ms.Point)
+  @@ms.Point
+}
 
 model User {
   id         UUID
@@ -1418,7 +1420,7 @@ model User {
 
 // With additional field config
 model User {
-  email  Email  @rawType(postgres.varchar(250))
+  email  Email  @postgres.varchar(250)
 }
 ```
 
@@ -1488,12 +1490,12 @@ source pg {
 }
 
 model User {
-  id           String   @rawType(pg.char(100))
-  age          Int      @rawType(pg.smallInt)
-  name         String   @rawType(pg.varchar(128))
-  height       Float    @rawType(pg.float4)
-  cashBalance  Decimal  @rawType(pg.numeric(30, 60))
-  props        Json     @rawType(pg.mediumText)
+  id           String   @pg.char(100)
+  age          Int      @pg.smallInt
+  name         String   @pg.varchar(128)
+  height       Float    @pg.float4
+  cashBalance  Decimal  @pg.numeric(30, 60)
+  props        Json     @pg.mediumText
 }
 ```
 
@@ -1511,7 +1513,7 @@ source ms {
 }
 
 model User {
-  age Int @rawType(pg.smallint) @rawType(ms.smallint)
+  age Int @pg.smallint) @ms.smallint
 }
 ```
 
@@ -1570,9 +1572,9 @@ column modifiers respectively:
 
 ```groovy
 model User {
-  id  Int  @rawType(pg.serial(100, 10))
-           @rawType(ms.autoIncrement(100, 10))
-           @rawType(maria.sequence(100, 10))
+  id  Int  @pg.serial(100, 10)
+           @ms.autoIncrement(100, 10)
+           @maria.sequence(100, 10)
 }
 ```
 
@@ -2555,7 +2557,7 @@ and universal, but "upgrade" the type for databases that support it.
 
 ```groovy
 model User {
-  id  String  @rawType(postgres.UUID) @rawType(mongo.ObjectID)
+  id  String  @postgres.UUID) @mongo.ObjectID
 }
 ```
 
@@ -3509,13 +3511,13 @@ the syntax be
 **An Assignment**
 
 ```
-type Numeric = Int @rawType(postgres.Numeric(5,2))
+type Numeric = Int @postgres.Numeric(5,2)
 ```
 
 **Or a Definition**
 
 ```
-type Numeric Int @rawType(postgres.Numeric(5,2))
+type Numeric Int @postgres.Numeric(5,2)
 ```
 
 Go uses the later as a Definition and the former as purely an alias to a Type
