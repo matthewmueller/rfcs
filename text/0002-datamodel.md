@@ -1,6 +1,5 @@
 # Datamodel 2.0
 
-- [Env Block](#env-block)
 - [Connector Block](#connector-block)
 - [Generator Block](#generator-block)
 - [Model Block](#model-block)
@@ -19,8 +18,17 @@
       - [Multiple-Reference Relationships](#multiple-reference-relationships)
       - [Referencing Primary Composite Keys](#referencing-primary-composite-keys)
   - [Attributes](#attributes)
+    - [Case 1. No arguments](#case-1-no-arguments)
+    - [Case 2. One positional argument](#case-2-one-positional-argument)
+    - [Case 3. Many named arguments](#case-3-many-named-arguments)
     - [Field Attributes](#field-attributes)
     - [Core Field Attributes](#core-field-attributes)
+      - [@id](#id)
+      - [@unique](#unique)
+      - [@field(\_ name: String)](#field_-name-string)
+      - [@default(\_ expr: Expr)](#default_-expr-expr)
+      - [@relation(\_ fields?: Identifier[]?, name?: String, onDelete?: CascadeEnum?)](#relation_-fields-identifier-name-string-ondelete-cascadeenum)
+      - [@updatedAt](#updatedat)
     - [Block Attributes](#block-attributes)
     - [Core Block Attributes](#core-block-attributes)
     - [Connector Provided Attributes](#connector-provided-attributes)
@@ -30,15 +38,16 @@
   - [Inline Embeds](#inline-embeds)
 - [Type Definition](#type-definition)
 - [Attribute Definition](#attribute-definition)
-- [Import Block](#import-block)
+- [Env Function](#env-function)
+  - [Introspect Behavior](#introspect-behavior)
+  - [Migrate Behavior](#migrate-behavior)
+  - [Generate Behavior](#generate-behavior)
 - [Function](#function)
-- [Boolean Expressions](#boolean-expressions)
 - [Configuration Layout](#configuration-layout)
   - [Soloists](#soloists)
   - [Team](#team)
     - [Multiple .prisma in the same directory get concatenated](#multiple-prisma-in-the-same-directory-get-concatenated)
     - [Multiple directories for different environments](#multiple-directories-for-different-environments)
-    - [Organization](#organization)
 - [Auto Formatting](#auto-formatting)
   - [Formatting Rules](#formatting-rules)
     - [Configuration blocks are align by their `=` sign.](#configuration-blocks-are-align-by-their--sign)
@@ -1455,3 +1464,5 @@ AnyCharacter = . { return text() }
 **NOTE:** This was an MVP and is primarily used to quickly iterate and ensuring
 our grammar didn't have ambiguities. It should only be used as a reference
 implementation as it may be out of date with the final parser.
+
+**TODO:** Is this useful @Emanuel or should I just remove it.
