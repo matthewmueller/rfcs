@@ -648,12 +648,12 @@ used in `model` and `embed` blocks as well as `type` definitions. These
 attributes **must** be implemented by every connector with a **best-effort
 implementation**:
 
-##### @id
+##### @id()
 
 Defines the primary key. There **must** be exactly one field `@id` or block
 `@id`
 
-##### @unique
+##### @unique()
 
 Defines the unique constraint
 
@@ -665,7 +665,7 @@ Defines the raw column name the field is mapped to
 
 Specifies a default value if null is provided
 
-##### @relation(\_ fields?: Identifier[]?, name?: String, onDelete?: CascadeEnum?)
+##### @relation(\_ fields?: Identifier[], name?: String, onDelete?: CascadeEnum)
 
 Disambiguates relationships when needed
 
@@ -713,8 +713,9 @@ Prisma supports the following core block attributes. Block attributes may be
 used in `model` and `embed` blocks. These attributes **must** be implemented by
 every connector with a **best-effort implementation**:
 
-- `@@model`: Define the name of the underlying table or collection name
-- `@@id`: Defines a composite primary key across fields
+- `@@model(_ name: String)`: Define the name of the underlying table or
+  collection name
+- `@@id()`: Defines a composite primary key across fields
 - `@@unique(_ fields: Identifier[], name: String?)`: Defines a composite unique
   constraint across fields
 
