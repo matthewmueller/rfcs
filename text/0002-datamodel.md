@@ -865,9 +865,9 @@ want. Please don't go too deep though.
 ```groovy
 model User {
   id        String
-  customer  Embed {
+  customer  embed {
     id     String
-    cards  Embed {
+    cards  embed {
       type Card
     }[]
   }?
@@ -1140,10 +1140,10 @@ Inline embeds add their own nested formatting rules:
 model User {
   id        String
   name      String
-  customer  Embed {
+  customer  embed {
     id         String
     full_name  String
-    cards   Embed {
+    cards   embed {
       type  Card
     }[]
   }?
