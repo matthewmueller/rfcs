@@ -719,15 +719,16 @@ every connector with a **best-effort implementation**:
 - `@@unique(_ fields: Identifier[], name: String?)`: Defines a composite unique
   constraint across fields
 
-#### Connector Provided Attributes
+#### Type Specifications
 
 In order to live up to our promise of not tailoring Prisma to the lowest-common
 database feature-set, connectors may bring their own attributes to the
 datamodel.
 
-This will make your datamodel less universal, but more capable for the
-datasource you're using. Connectors will export a schema of capabilities that
-you can apply to your datamodel field and blocks
+The connector can bring all of it's own specific types into the datamodel. This
+will make your datamodel less universal, but more capable for the datasource
+you're using. Connectors will export a schema of capabilities that you can apply
+to your datamodel field and blocks.
 
 ```groovy
 connector pg {
@@ -766,39 +767,49 @@ model User {
 }
 ```
 
-### Extending Models
+Additionally, a generator might choose to implement dedicated support for all or
+some Type Specifications.
 
-You can break up large models into separate fragments by placing a model inside
-another model:
+For example, a ts generator might choose to interpret the type of the `name`
+field as `ArrayBuffer(8)` instead of `String` for performance reasons
 
 ```groovy
-model Human {
-  id      Int     @id
-  name    String
-  height  Int
-}
-
-model Employee {
-  Human
-  employer  String
-  height    Float
+model User {
+	name  String  @pg.varchar(8)
 }
 ```
 
-In this example, Employee extends Human. Writing this manually it look like
-this:
+This mapping is not declarative, so the generator is free to take all aspects of
+the datamodel into account when making this decision, including collation
+settings for the table and so on.
+
+### Why do we enforce the Core Prisma Primitive Type, even when there is a type specification?
+
+Generators are guaranteed that they can always fall back to the Core Prisma
+Primitive Type. This way they can implement special enhancements for certain
+Type Specifications of certain databases but still work reasonably well for all
+the types and databases that they don't have dedicated support for.
+
+This is especially important for connectors and generators implemented by the
+community.
+
+## Type Definition
+
+Type definitions can be used to consolidate various type specifications into one
+type.
 
 ```groovy
-model Employee {
-  id        Int     @id
-  name      String
-  employer  String
-  height    Float
+type Numeric Int @pg.numeric(precision: 5, scale: 2)
+                 @ms.decimal(precision: 5, scale: 2)
+
+model Customer {
+  id       Int      @id
+  weight   Numeric
 }
 ```
 
-- If there's a type conflict, the child's type will have precedence. In this
-  case `Employee.height` overrides `Human.height`.
+**TODO:** How far do we want to take Type Definitions? Do they allow `@unique`?
+Or do they just allow type specifications for now.
 
 ## Enum Block
 
@@ -812,25 +823,7 @@ enum Color {
 }
 ```
 
-```groovy
-enum Status {
-  STARTED = 0
-  DOING   = 1
-  DONE    = 2
-}
-```
-
-An enum **cannot** have multiple different types:
-
-```groovy
-// not supported
-enum Color {
-  Red  = "RED"
-  Teal = 10
-}
-```
-
-For now, we'll only support `String` and `Int` enum value types.
+For now, we'll only support `String` enum value types.
 
 ## Embed Block
 
@@ -873,9 +866,9 @@ want. Please don't go too deep though.
 ```groovy
 model User {
   id        String
-  customer  {
+  customer  Embed {
     id     String
-    cards  {
+    cards  Embed {
       type Card
     }[]
   }?
@@ -884,38 +877,6 @@ model User {
 enum Card {
   Visa        = "VISA"
   Mastercard  = "MASTERCARD"
-}
-```
-
-## Type Definition
-
-Type definitions can be used to consolidate various type implementations into
-one type.
-
-```groovy
-type Numeric Int @pg.numeric(precision: 5, scale: 2)
-                 @ms.decimal(precision: 5, scale: 2)
-
-model Customer {
-  id       Int      @id
-  weight   Numeric
-}
-```
-
-**TODO:** Consider replacing Type Definition with Attribute Definition below
-
-## Attribute Definition
-
-Attribute definitions can be used to consolidate attributes so you're not
-repeating yourself.
-
-```groovy
-attr numeric @pg.numeric(precision: 5, scale: 2)
-             @ms.decimal(precision: 5, scale: 2)
-
-model Customer {
-  id       Int  @id
-  weight   Int  @numeric
 }
 ```
 
@@ -1014,8 +975,7 @@ model User {
 }
 ```
 
-These are backed in the database where it's supported, otherwise they're
-provided at the Prisma level by the query engine.
+Functions will always be provided at the Prisma level by the query engine.
 
 The data types that these functions return will be defined by the connectors.
 For example, `now()` in Postgres will return a `timestamp with time zone`, while
@@ -1175,16 +1135,16 @@ block _ {
 }
 ```
 
-Inline embeds follow their own nested formatting rules:
+Inline embeds add their own nested formatting rules:
 
 ```groovy
 model User {
-  id    String
-  name  String
-  customer {
+  id        String
+  name      String
+  customer  Embed {
     id         String
     full_name  String
-    cards  {
+    cards   Embed {
       type  Card
     }[]
   }?
