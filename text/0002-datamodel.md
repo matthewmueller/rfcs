@@ -965,6 +965,9 @@ When two different datasources share the same name, their exported attributes
 are the intersection of the two datasources. This makes it safe to use the
 attributes depending on the runtime environment variable switch.
 
+If two datasources of the same name are enabled, we will throw a runtime-time
+error.
+
 ## Function
 
 Prisma core provides a set of functions that **must** be implemented by every
