@@ -52,25 +52,25 @@
     - [Configuration blocks are align by their `=` sign.](#configuration-blocks-are-align-by-their--sign)
     - [Field definitions are aligned into columns separated by 2 or more spaces.](#field-definitions-are-aligned-into-columns-separated-by-2-or-more-spaces)
 
-## Connector Block
+## Datasource Block
 
-Connector blocks tell the datamodel where the models are backed. You can have
-multiple connectors from different datasources.
+Datasource blocks tell the datamodel where the models are backed. You can have
+multiple datasources with different connectors.
 
 ```groovy
-connector pg {
-  type    = "postgres"
-  url     = env.POSTGRES_URL
-  default = true
+datasource pg {
+  connector = "postgres"
+  url       = env.POSTGRES_URL
+  default   = true
 }
 
-connector mgo {
-  type = "mongo"
+datasource mgo {
+  connector = "mongo"
   url  = env.MONGO_URL
 }
 
-connector mgo2 {
-  type = "mongo"
+datasource mgo2 {
+  connector = "mongo"
   url  = env.MONGO2_URL
 }
 ```
@@ -722,12 +722,12 @@ to your datamodel field and blocks.
 
 ```groovy
 connector pg {
-  type = "postgres"
+  connector = "postgres"
   url  = "postgres://localhost:5432/jack?sslmode=false"
 }
 
 connector ms {
-  type = "mysql"
+  connector = "mysql"
   url  = "mysql://localhost:5522/jack"
 }
 
@@ -877,15 +877,10 @@ purpose of the `env` function is to:
 - Keeps secrets out of the datamodel
 - Improve portability of the datamodel
 
-```groovy
-env POSTGRES_URL {
-  type    = "string"
-  default = "postgres://localhost:4321/db"
-}
-
-connector pg {
-  type = "postgres"
-  url  = env.POSTGRES_URL
+````groovy
+datasource pg {
+  connector = "postgres"
+  url  = env("POSTGRES_URL")
 }
 ```
 
@@ -898,7 +893,7 @@ $ prisma deploy
 ! required POSTGRES_URL variable not provided
 
 $ POSTGRES_URL="postgres://user:secret@rds.amazon.com:4321/db" prisma deploy
-```
+````
 
 ### Introspect Behavior
 
@@ -935,10 +930,39 @@ connector pg {
 ```ts
 childProcess.spawn('./query_engine', {
   env: {
-    url: process.env.POSTGRES_URL
-  }
+    url: process.env.POSTGRES_URL,
+  },
 })
 ```
+
+### Switching Datasources based on Environments
+
+Sometimes it's nice to get started with an SQLite database and migrate to
+Postgres or MySQL for production. We support this workflow:
+
+```groovy
+datasource db {
+  enabled = bool(env("SQLITE_URL"))
+  connector = "sqlite"
+  url = env("SQLITE_URL")
+}
+
+datasource db {
+  // we can probably automatically cast without bool(...)
+  enabled = bool(env("POSTGRES_URL"))
+  connector = "postgres"
+  url = env("POSTGRES_URL")
+}
+
+model User {
+  id         Int    @id @db.int
+  first_name String @unique
+}
+```
+
+When two different datasources share the same name, their exported attributes
+are the intersection of the two datasources. This makes it safe to use the
+attributes depending on the runtime environment variable switch.
 
 ## Function
 
