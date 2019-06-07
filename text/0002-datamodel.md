@@ -943,16 +943,16 @@ Postgres or MySQL for production. We support this workflow:
 
 ```groovy
 datasource db {
-  enabled = bool(env("SQLITE_URL"))
+  enabled   = bool(env("SQLITE_URL"))
   connector = "sqlite"
-  url = env("SQLITE_URL")
+  url       = env("SQLITE_URL")
 }
 
 datasource db {
   // we can probably automatically cast without bool(...)
-  enabled = bool(env("POSTGRES_URL"))
+  enabled   = bool(env("POSTGRES_URL"))
   connector = "postgres"
-  url = env("POSTGRES_URL")
+  url       = env("POSTGRES_URL")
 }
 
 model User {
