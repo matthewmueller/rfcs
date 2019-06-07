@@ -961,9 +961,12 @@ model User {
 }
 ```
 
-When two different datasources share the same name, their exported attributes
+When two different datasources share the same name, their exported capabilities
 are the intersection of the two datasources. This makes it safe to use the
 attributes depending on the runtime environment variable switch.
+
+Intersecting capabilities also provide a way to switch to a new data source and
+see how portable your datasource is.
 
 If two datasources of the same name are enabled, we will throw a runtime-time
 error.
