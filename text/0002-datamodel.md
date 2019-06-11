@@ -33,6 +33,7 @@
     - [Core Block Attributes](#core-block-attributes)
     - [Type Specifications](#type-specifications)
   - [Why do we enforce the Core Prisma Primitive Type, even when there is a type specification?](#why-do-we-enforce-the-core-prisma-primitive-type-even-when-there-is-a-type-specification)
+- [Comments](#comments)
 - [Type Definition](#type-definition)
 - [Enum Block](#enum-block)
 - [Embed Block](#embed-block)
@@ -784,6 +785,38 @@ the types and databases that they don't have dedicated support for.
 This is especially important for connectors and generators implemented by the
 community.
 
+## Comments
+
+There are 2 types of comments that are supported in the datamodel:
+
+1. `// comment`: This comment purely for the reader's clarity and are ignored by
+   the parser
+2. `/// comment`: These comments will show up in the AST, either as descriptions
+   to AST nodes or as free-floating comments. Tools can then use these comments
+   to provide additional information to the user.
+
+Here are some different examples:
+
+```
+/// This comment will get atached to the User node
+model User {
+  /// This comment will get attached to the id node
+  id      Int
+  // This comment is just for you
+  weight  Float /// This comment gets attached to the weight node
+}
+
+// This comment is just for you. This comment will not
+// show up in the AST.
+
+/// This is a free-floating comment that will show up
+/// in the AST as a Comment node, but is not attached
+/// to any other node. T
+/// This is a free-floating comment
+
+model Customer {}
+```
+
 ## Type Definition
 
 Type definitions can be used to consolidate various type specifications into one
@@ -793,7 +826,7 @@ type.
 type Numeric Int @pg.numeric(precision: 5, scale: 2)
                  @ms.decimal(precision: 5, scale: 2)
 
-model Customer {
+model User {
   id       Int      @id
   weight   Numeric
 }
